@@ -5,3 +5,5 @@ data/test
 data/train
 .DS_Store
 kaggle.json
+*.hdf5
+remove_model_files.py

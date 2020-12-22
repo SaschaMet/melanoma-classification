@@ -19,5 +19,5 @@ with open('/content/gdrive/MyDrive/Colab Notebooks/_auth/kaggle.json') as json_f
 ## download the dataset
 !mkdir data
 !cd data && kaggle datasets download -d arroqc/siic-isic-224x224-images && unzip siic-isic-224x224-images.zip
-!cd /content/data && wget --no-check-certificate --content-disposition https://github.com/SaschaMet/melanoma-classification/blob/master/data/test.csv
-!cd /content/data && wget --no-check-certificate --content-disposition https://github.com/SaschaMet/melanoma-classification/blob/master/data/train.csv
+!cd /content/data && curl -OL https://raw.githubusercontent.com/SaschaMet/melanoma-classification/master/data/test.csv
+!cd /content/data && curl -OL https://raw.githubusercontent.com/SaschaMet/melanoma-classification/master/data/train.csv
