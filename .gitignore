@@ -1,0 +1,7 @@
+__pycache__
+.devcontainer
+kaggle-auth.json
+data/test
+data/train
+.DS_Store
+kaggle.json

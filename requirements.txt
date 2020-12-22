@@ -1,0 +1,9 @@
+numpy==1.18
+tensorflow
+pandas
+sklearn
+ipykernel
+seaborn
+matplotlib
+keras
+kaggle
