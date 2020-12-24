@@ -7,3 +7,4 @@ data/train
 kaggle.json
 *.hdf5
 remove_model_files.py
+kfold-model.py

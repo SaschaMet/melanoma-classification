@@ -1,5 +1,6 @@
 numpy==1.18
 tensorflow
+tensorflow_addons
 pandas
 sklearn
 ipykernel
