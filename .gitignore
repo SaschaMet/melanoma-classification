@@ -8,4 +8,3 @@ kaggle.json
 evaluation/model.hdf5
 *.hdf5
 remove_model_files.py
-kfold-model.py
