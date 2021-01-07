@@ -8,12 +8,14 @@ echo "install everything ..."
 # install requirements
 pip install --user -r requirements.txt
 
-# install node
-wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh | bash
-nvm install 12
 
+# Optional: Install Kite (https://www.kite.com)
 
-# # install kite
+## 1. Install node
+# wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh | bash
+# nvm install 12
+
+## 2. Install kite
 # pip install jupyter-kite
 # bash -c "$(wget -q -O - https://linux.kite.com/dls/linux/current)" -y
 # jupyter labextension install "@kiteco/jupyterlab-kite"

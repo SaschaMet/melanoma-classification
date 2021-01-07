@@ -1,7 +1,7 @@
 {
     "id": "saschamet/siim-isic-melanoma-classification",
     "title": "siim-isic-melanoma-classification",
-    "code_file": "eda.ipynb",
+    "code_file": "main.ipynb",
     "language": "python",
     "kernel_type": "notebook",
     "is_private": "true",

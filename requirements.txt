@@ -9,3 +9,4 @@ matplotlib
 keras
 kaggle
 pandas-profiling
+ipython
