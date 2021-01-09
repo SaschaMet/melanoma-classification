@@ -22,6 +22,8 @@ import os
 
 # configs to supress tf logs
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
+
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
 
@@ -32,7 +34,7 @@ SAVE_OUTPUT = True
 IMG_SIZE = (224, 224)
 INPUT_SHAPE = (224, 224, 3)
 
-EPOCHS = 40
+EPOCHS = 1
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-4
 OPTIMIZER = Adam(lr=LEARNING_RATE)
@@ -564,11 +566,10 @@ plot_confusion_matrix(cm, cm_plot_label, timestamp)
 
 
 metrics = {
-    'f1score': f1score,
-    'precision': precision,
-    'recall': recall,
-    'threshold': threshold,
-    'cm': cm,
+    'f1score': str(f1score),
+    'precision': str(precision),
+    'recall': str(recall),
+    'threshold': str(threshold),
 }
 
 with open('metrics.txt', 'w') as file:
