@@ -1,8 +1,11 @@
+<<<<<<< HEAD
+=======
 import os
 
 # configs to supress tf logs
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
+<<<<<<< HEAD
 
 import json
 import random
@@ -25,7 +28,37 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
 
+=======
+>>>>>>> 0e8338fc4f97ec9a3163a3f55ed0c78441ab21c2
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
+from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.preprocessing.image import ImageDataGenerator
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from keras.applications.vgg16 import VGG16
+from tensorflow.keras import layers
+from datetime import datetime, date
+from keras.optimizers import Adam
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from pathlib import Path
+import tensorflow as tf
+from tqdm import tqdm
+import pandas as pd
+import numpy as np
+import itertools
+import warnings
+import random
+import json
+<<<<<<< HEAD
+import os
 
+# configs to supress tf logs
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+=======
+>>>>>>> 11433fbfc6a21bf2110886fa9a40ee873b6ccedb
+
+>>>>>>> 0e8338fc4f97ec9a3163a3f55ed0c78441ab21c2
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
 
@@ -565,6 +598,7 @@ cm = confusion_matrix(y_t, y_pred_binary)
 
 cm_plot_label = ['benign', 'malignant']
 plot_confusion_matrix(cm, cm_plot_label, timestamp)
+<<<<<<< HEAD
 
 
 metrics = {
@@ -576,3 +610,20 @@ metrics = {
 
 with open('metrics.txt', 'w') as file:
     file.write(json.dumps(metrics))
+=======
+<<<<<<< HEAD
+
+
+metrics = {
+    'f1score': f1score,
+    'precision': precision,
+    'recall': recall,
+    'threshold': threshold,
+    'cm': cm,
+}
+
+with open('metrics.txt', 'w') as file:
+    file.write(json.dumps(metrics))
+=======
+>>>>>>> 0e8338fc4f97ec9a3163a3f55ed0c78441ab21c2
+>>>>>>> 11433fbfc6a21bf2110886fa9a40ee873b6ccedb
