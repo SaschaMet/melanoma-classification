@@ -1,38 +1,8 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 import os
 
 # configs to supress tf logs
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-<<<<<<< HEAD
-
-import json
-import random
-import warnings
-import itertools
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-import tensorflow as tf
-from pathlib import Path
-from tensorflow import keras
-import matplotlib.pyplot as plt
-from keras.optimizers import Adam
-from datetime import datetime, date
-from tensorflow.keras import layers
-from keras.applications.vgg16 import VGG16
-from tensorflow.keras.models import Sequential
-from sklearn.model_selection import train_test_split
-from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import ModelCheckpoint, EarlyStopping
-from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
-
-=======
->>>>>>> 0e8338fc4f97ec9a3163a3f55ed0c78441ab21c2
-=======
->>>>>>> 038190bd59383ad42659768eb2d7d399015d7e9c
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.preprocessing.image import ImageDataGenerator
@@ -53,23 +23,7 @@ import itertools
 import warnings
 import random
 import json
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 038190bd59383ad42659768eb2d7d399015d7e9c
-import os
 
-# configs to supress tf logs
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-<<<<<<< HEAD
-=======
->>>>>>> 11433fbfc6a21bf2110886fa9a40ee873b6ccedb
-
->>>>>>> 0e8338fc4f97ec9a3163a3f55ed0c78441ab21c2
-=======
-
-
->>>>>>> 038190bd59383ad42659768eb2d7d399015d7e9c
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
 
@@ -609,8 +563,6 @@ cm = confusion_matrix(y_t, y_pred_binary)
 
 cm_plot_label = ['benign', 'malignant']
 plot_confusion_matrix(cm, cm_plot_label, timestamp)
-<<<<<<< HEAD
-<<<<<<< HEAD
 
 
 metrics = {
@@ -622,24 +574,3 @@ metrics = {
 
 with open('metrics.txt', 'w') as file:
     file.write(json.dumps(metrics))
-=======
-<<<<<<< HEAD
-=======
->>>>>>> 038190bd59383ad42659768eb2d7d399015d7e9c
-
-
-metrics = {
-    'f1score': str(f1score),
-    'precision': str(precision),
-    'recall': str(recall),
-    'threshold': str(threshold),
-}
-
-with open('metrics.txt', 'w') as file:
-    file.write(json.dumps(metrics))
-<<<<<<< HEAD
-=======
->>>>>>> 0e8338fc4f97ec9a3163a3f55ed0c78441ab21c2
->>>>>>> 11433fbfc6a21bf2110886fa9a40ee873b6ccedb
-=======
->>>>>>> 038190bd59383ad42659768eb2d7d399015d7e9c
