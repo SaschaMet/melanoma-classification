@@ -1,3 +1,11 @@
+<<<<<<< HEAD
+=======
+import os
+
+# configs to supress tf logs
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
+>>>>>>> 0e8338fc4f97ec9a3163a3f55ed0c78441ab21c2
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.preprocessing.image import ImageDataGenerator
@@ -18,10 +26,14 @@ import itertools
 import warnings
 import random
 import json
+<<<<<<< HEAD
 import os
 
 # configs to supress tf logs
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+=======
+
+>>>>>>> 0e8338fc4f97ec9a3163a3f55ed0c78441ab21c2
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
 
@@ -32,7 +44,7 @@ SAVE_OUTPUT = True
 IMG_SIZE = (224, 224)
 INPUT_SHAPE = (224, 224, 3)
 
-EPOCHS = 40
+EPOCHS = 1
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-4
 OPTIMIZER = Adam(lr=LEARNING_RATE)
@@ -561,6 +573,7 @@ cm = confusion_matrix(y_t, y_pred_binary)
 
 cm_plot_label = ['benign', 'malignant']
 plot_confusion_matrix(cm, cm_plot_label, timestamp)
+<<<<<<< HEAD
 
 
 metrics = {
@@ -573,3 +586,5 @@ metrics = {
 
 with open('metrics.txt', 'w') as file:
     file.write(json.dumps(metrics))
+=======
+>>>>>>> 0e8338fc4f97ec9a3163a3f55ed0c78441ab21c2
