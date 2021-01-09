@@ -1,4 +1,7 @@
 import os
+# Has to be here to supress tf outputs
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
 import json
 import random
 import warnings
@@ -19,6 +22,10 @@ from sklearn.model_selection import train_test_split
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
+
+# additional configs to supress tf logs
+tf.get_logger().setLevel('ERROR')
+tf.autograph.set_verbosity(2)
 
 SEED = 1
 NUM_CLASSES = 2
@@ -193,7 +200,6 @@ def save_history(history, timestamp):
         with open("./" + timestamp + "-history.json", 'w') as f:
             json.dump(history, f)
 
-
 def plot_auc(t_y, p_y):
     """ Helper function to plot the auc curve
 
@@ -204,9 +210,9 @@ def plot_auc(t_y, p_y):
     Returns:
         Null
     """
-    fpr, tpr = roc_curve(t_y, p_y, pos_label=1)
-    _, c_ax = plt.subplots(1, 1, figsize=(8, 8))
-    c_ax.plot(fpr, tpr, label='%s (AUC:%0.2f)' % ('Target', auc(fpr, tpr)))
+    fpr, tpr, thresholds = roc_curve(t_y, p_y, pos_label=1)
+    fig, c_ax = plt.subplots(1,1, figsize = (8, 8))
+    c_ax.plot(fpr, tpr, label = '%s (AUC:%0.2f)'  % ('Target', auc(fpr, tpr)))
     c_ax.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
     c_ax.legend()
     c_ax.set_xlabel('False Positive Rate')
@@ -488,6 +494,8 @@ val_gen = get_validation_gen(val_df)
 valX, valY = val_gen.next()
 
 
+EPOCHS = 1
+
 model.compile(
     loss=LOSS,
     metrics=METRICS,
@@ -502,6 +510,7 @@ history = model.fit(
     validation_data=(valX, valY),
 )
 
+print("Done training")
 
 # plot model history
 save_history(history.history, timestamp)
@@ -527,7 +536,6 @@ for i in tqdm(range(val_df.shape[0])):
     y_p.append(y_pred)
 
 plot_auc(y_t, y_p)
-
 
 # calculate the precision, recall and the thresholds
 precision, recall, thresholds = precision_recall_curve(y_t, y_p)
@@ -557,28 +565,3 @@ cm = confusion_matrix(y_t, y_pred_binary)
 
 cm_plot_label = ['benign', 'malignant']
 plot_confusion_matrix(cm, cm_plot_label)
-
-if SAVE_OUTPUT:
-    # save the model to a json file
-    model_json = model.to_json()
-    with open("./" + timestamp + "-model.json", "w") as json_file:
-        json_file.write(model_json)
-
-    # create the submission.csv file
-    data = []
-    for i in tqdm(range(test.shape[0])):
-        image_path = test.iloc[i].image_path
-        image_name = test.iloc[i].image_name
-        img = keras.preprocessing.image.load_img(
-            image_path, target_size=IMG_SIZE)
-        img = keras.preprocessing.image.img_to_array(img)
-        img = img / 255
-        img_array = tf.expand_dims(img, 0)
-        y_pred = model.predict(img_array)
-        y_pred = tf.nn.softmax(y_pred)[0].numpy()[1]
-        data.append([image_name, y_pred])
-
-    sub_df = pd.DataFrame(data, columns=['image_name', 'target'])
-    sub_df.to_csv("./submission.csv", index=False)
-
-    sub_df.head()
