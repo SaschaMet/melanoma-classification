@@ -1,29 +1,29 @@
 import os
-# Has to be here to supress tf outputs
+
+# configs to supress tf logs
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-import json
-import random
-import warnings
-import itertools
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-import tensorflow as tf
-from pathlib import Path
-from tensorflow import keras
-import matplotlib.pyplot as plt
-from keras.optimizers import Adam
-from datetime import datetime, date
-from tensorflow.keras import layers
-from keras.applications.vgg16 import VGG16
-from tensorflow.keras.models import Sequential
-from sklearn.model_selection import train_test_split
-from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
+from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.preprocessing.image import ImageDataGenerator
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from keras.applications.vgg16 import VGG16
+from tensorflow.keras import layers
+from datetime import datetime, date
+from keras.optimizers import Adam
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from pathlib import Path
+import tensorflow as tf
+from tqdm import tqdm
+import pandas as pd
+import numpy as np
+import itertools
+import warnings
+import random
+import json
 
-# additional configs to supress tf logs
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
 
@@ -200,7 +200,8 @@ def save_history(history, timestamp):
         with open("./" + timestamp + "-history.json", 'w') as f:
             json.dump(history, f)
 
-def plot_auc(t_y, p_y):
+
+def plot_auc(t_y, p_y, timestamp):
     """ Helper function to plot the auc curve
 
     Parameters:
@@ -211,12 +212,13 @@ def plot_auc(t_y, p_y):
         Null
     """
     fpr, tpr, thresholds = roc_curve(t_y, p_y, pos_label=1)
-    fig, c_ax = plt.subplots(1,1, figsize = (8, 8))
-    c_ax.plot(fpr, tpr, label = '%s (AUC:%0.2f)'  % ('Target', auc(fpr, tpr)))
+    fig, c_ax = plt.subplots(1, 1, figsize=(8, 8))
+    c_ax.plot(fpr, tpr, label='%s (AUC:%0.2f)' % ('Target', auc(fpr, tpr)))
     c_ax.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
     c_ax.legend()
     c_ax.set_xlabel('False Positive Rate')
     c_ax.set_ylabel('True Positive Rate')
+    plt.savefig("./" + timestamp + "-auc.png")
 
 
 def calc_f1(prec, recall):
@@ -247,7 +249,7 @@ def pred_to_binary(pred):
         return 1
 
 
-def plot_confusion_matrix(cm, labels):
+def plot_confusion_matrix(cm, labels, timestamp):
     """ Helper function to plot a confusion matrix
 
         Parameters:
@@ -271,6 +273,7 @@ def plot_confusion_matrix(cm, labels):
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.tight_layout()
+    plt.savefig("./" + timestamp + "-cm.png")
 
 
 def get_training_gen(df):
@@ -512,7 +515,6 @@ print("Done training")
 # plot model history
 save_history(history.history, timestamp)
 
-
 # plot the auc
 y_t = []  # true labels
 y_p = []  # predictions
@@ -532,7 +534,7 @@ for i in tqdm(range(val_df.shape[0])):
     y_t.append(y_true)
     y_p.append(y_pred)
 
-plot_auc(y_t, y_p)
+plot_auc(y_t, y_p, timestamp)
 
 # calculate the precision, recall and the thresholds
 precision, recall, thresholds = precision_recall_curve(y_t, y_p)
@@ -561,4 +563,4 @@ y_pred_binary = [pred_to_binary(x) for x in y_p]
 cm = confusion_matrix(y_t, y_pred_binary)
 
 cm_plot_label = ['benign', 'malignant']
-plot_confusion_matrix(cm, cm_plot_label)
+plot_confusion_matrix(cm, cm_plot_label, timestamp)
