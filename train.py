@@ -493,9 +493,6 @@ train_gen = get_training_gen(train_df)
 val_gen = get_validation_gen(val_df)
 valX, valY = val_gen.next()
 
-
-EPOCHS = 1
-
 model.compile(
     loss=LOSS,
     metrics=METRICS,
