@@ -23,7 +23,6 @@ import os
 # configs to supress tf logs
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
 
@@ -34,7 +33,7 @@ SAVE_OUTPUT = True
 IMG_SIZE = (224, 224)
 INPUT_SHAPE = (224, 224, 3)
 
-EPOCHS = 1
+EPOCHS = 40
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-4
 OPTIMIZER = Adam(lr=LEARNING_RATE)
@@ -340,18 +339,19 @@ def get_validation_gen(df):
     return val_gen
 
 
-def load_pretrained_model():
+def load_pretrained_model(layer_of_interest="block5_pool"):
     """ Helper function which returns a VGG16 model
     """
-    base_model = VGG16(
-        input_shape=INPUT_SHAPE,
-        include_top=False,
-        weights='imagenet'
-    )
+    vgg_model = VGG16(include_top=True, weights='imagenet')
+    transfer_layer = vgg_model.get_layer(layer_of_interest)
+    base_model = Model(inputs=vgg_model.input, outputs=transfer_layer.output)
+
+    for layer in base_model.layers[0:17]:
+        layer.trainable = False
 
     # freeze the first 15 layers of the base model. All other layers are trainable.
-    for layer in base_model.layers[0:15]:
-        layer.trainable = False
+    # for layer in base_model.layers[0:15]:
+        #layer.trainable = False
 
     for idx, layer in enumerate(base_model.layers):
         print("layer", idx + 1, ":", layer.name,
