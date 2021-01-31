@@ -1,28 +1,28 @@
+import json
+import random
+import warnings
+import itertools
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+import tensorflow as tf
+from pathlib import Path
+from tensorflow import keras
+import matplotlib.pyplot as plt
+from keras.optimizers import Adam
+from datetime import datetime, date
+from tensorflow.keras import layers
+from keras.applications.vgg16 import VGG16, Model
+from tensorflow.keras.models import Sequential
+from sklearn.model_selection import train_test_split
+from keras.preprocessing.image import ImageDataGenerator
+from keras.callbacks import ModelCheckpoint, EarlyStopping
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
 import os
 
 # configs to supress tf logs
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
-from keras.callbacks import ModelCheckpoint, EarlyStopping
-from keras.preprocessing.image import ImageDataGenerator
-from sklearn.model_selection import train_test_split
-from tensorflow.keras.models import Sequential
-from keras.applications.vgg16 import VGG16
-from tensorflow.keras import layers
-from datetime import datetime, date
-from keras.optimizers import Adam
-import matplotlib.pyplot as plt
-from tensorflow import keras
-from pathlib import Path
-import tensorflow as tf
-from tqdm import tqdm
-import pandas as pd
-import numpy as np
-import itertools
-import warnings
-import random
-import json
 
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(2)
@@ -99,11 +99,11 @@ def seed_all(seed):
     print("Set seed")
     random.seed(seed)
     np.random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    tf.random.set_seed(seed)
     os.environ['TF_KERAS'] = str(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
     os.environ['TF_DETERMINISTIC_OPS'] = str(seed)
     os.environ['TF_CUDNN_DETERMINISTIC'] = str(seed)
-    tf.random.set_seed(seed)
 
 
 def check_image(file_path):
