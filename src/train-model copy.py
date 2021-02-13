@@ -20,11 +20,6 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, confusion_matrix
 import os
 
-# configs to supress tf logs
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-
-tf.get_logger().setLevel('ERROR')
-tf.autograph.set_verbosity(2)
 
 SEED = 1
 NUM_CLASSES = 2
@@ -168,7 +163,7 @@ def create_splits(df, test_size, classToPredict):
     return train_data, val_data
 
 
-def save_history(history, timestamp):
+def plot_history(history, timestamp):
     """ Helper function to plot the history of a tensorflow model
 
         Parameters:
@@ -512,7 +507,7 @@ history = model.fit(
 print("Done training")
 
 # plot model history
-save_history(history.history, timestamp)
+plot_history(history.history, timestamp)
 
 # plot the auc
 y_t = []  # true labels

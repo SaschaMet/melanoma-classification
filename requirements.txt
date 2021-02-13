@@ -1,4 +1,4 @@
-numpy==1.18
+numpy
 tensorflow
 tensorflow_addons
 pandas
@@ -6,7 +6,6 @@ sklearn
 ipykernel
 seaborn
 matplotlib
-keras
 kaggle
 pandas-profiling
-ipython
+tqdm
