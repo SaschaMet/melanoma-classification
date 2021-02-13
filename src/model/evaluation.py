@@ -1,13 +1,13 @@
-import sys  # isort:skip
-import json  # isort:skip
-import numpy as np  # isort:skip
-from tqdm import tqdm  # isort:skip
-import tensorflow as tf  # isort:skip
-from tensorflow import keras  # isort:skip
-from sklearn.metrics import precision_recall_curve, confusion_matrix  # isort:skip
+import sys
+import json
+import numpy as np
+from tqdm import tqdm
+import tensorflow as tf
+from tensorflow import keras
+from sklearn.metrics import precision_recall_curve, confusion_matrix
 
 
-sys.path.insert(0, '..')  # isort:skip
+sys.path.insert(0, '..')
 
 
 def calc_f1(prec, recall):
@@ -39,9 +39,9 @@ def pred_to_binary(pred, threshold):
 
 
 def evaluate_model(model, val_df, history, timestamp, img_size):
-    from src.plots.plot_auc import plot_auc  # isort:skip
-    from src.plots.plot_history import plot_history  # isort:skip
-    from src.plots.plot_confusion_matrix import plot_confusion_matrix  # isort:skip
+    from plots.plot_auc import plot_auc  # isort:skip
+    from plots.plot_history import plot_history  # isort:skip
+    from plots.plot_confusion_matrix import plot_confusion_matrix  # isort:skip
 
     y_t = []  # true labels
     y_p = []  # predictions
@@ -95,7 +95,7 @@ def evaluate_model(model, val_df, history, timestamp, img_size):
         file.write(json.dumps(metrics))
 
     # create a confusion matrix
-    y_pred_binary = [pred_to_binary(x) for x in y_p]
+    y_pred_binary = [pred_to_binary(x, threshold) for x in y_p]
     cm = confusion_matrix(y_t, y_pred_binary)
 
     cm_plot_label = ['benign', 'malignant']
