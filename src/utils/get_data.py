@@ -94,15 +94,16 @@ def prepare_data(train, test):
     return train, test
 
 
-def get_datasets(base_path, image_path, image_type):
+def get_datasets(base_path, image_path, image_type, prepare_df):
     print("get train data")
-    train = get_train_data(base_path, image_path, image_type)
+    train_set = get_train_data(base_path, image_path, image_type)
 
     print("get test data")
-    test = get_test_data(base_path, image_path, image_type)
+    test_set = get_test_data(base_path, image_path, image_type)
 
     print("preparing datasets")
-    train_set, test_set = prepare_data(train, test)
+    if prepare_df:
+        train_set, test_set = prepare_data(train_set, test_set)
 
     return train_set, test_set
 

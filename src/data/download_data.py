@@ -29,7 +29,7 @@ def download_dataset():
     os.system('mkdir data')
 
     # go to data directory and download dataset
-    os.system('cd data && kaggle datasets download -d cdeotte/jpeg-melanoma-768x768')
+    os.system('cd data && kaggle datasets download -d cdeotte/melanoma-1024x1024')
 
     # unzip the zip file
     os.system('cd data && unzip jpeg-melanoma-768x768.zip')

@@ -1,13 +1,13 @@
 import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.applications import ResNet152V2
+from tensorflow.keras.applications import ResNet101V2
 
 
 def get_pretrained_model(img_shape):
     strategy = tf.distribute.get_strategy()
     with strategy.scope():
-        pretrained_model = ResNet152V2(
+        pretrained_model = ResNet101V2(
             include_top=False,
             weights="imagenet",
             input_tensor=Sequential([])(layers.Input(shape=img_shape)),

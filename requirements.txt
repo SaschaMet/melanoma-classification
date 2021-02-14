@@ -9,3 +9,4 @@ matplotlib
 kaggle
 pandas-profiling
 tqdm
+opencv-python
