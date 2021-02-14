@@ -80,9 +80,9 @@ def prepare_data(train, test):
 
     # replace missing age values wiht the mean age
     train['age_approx'] = train['age_approx'].fillna(
-        int(np.mean(train['age_approx'])))
+        np.mean(train['age_approx']))
     test['age_approx'] = test['age_approx'].fillna(
-        int(np.mean(test['age_approx'])))
+        np.mean(test['age_approx']))
 
     # convert age to int
     train['age_approx'] = train['age_approx'].astype('int')

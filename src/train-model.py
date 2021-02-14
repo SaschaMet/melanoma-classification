@@ -7,17 +7,13 @@ from datetime import datetime, date
 
 from model.evaluation import evaluate_model
 from model.create_model import create_model
+from model.model_callbacks import get_model_callbacks
 from utils.create_splits import create_splits
 from utils.get_data import get_datasets, balance_dataset
 from utils.data_generator import get_training_gen, get_validation_gen
 
 SEED = 1
 VERBOSE_LEVEL = 2
-
-# Tensorflow
-GPUS = 0
-XLA_ACCELERATE = True
-MIXED_PRECISION = True
 
 # suppress tf logs and warnings
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -47,8 +43,13 @@ timestamp = str(today) + "_" + str(current_time)
 GPUS = len(tf.config.experimental.list_physical_devices('GPU'))
 if GPUS == 0:
     DEVICE = 'CPU'
+    print("Train on CPU")
 else:
+    print("Train on GPU")
     DEVICE = 'GPU'
+    XLA_ACCELERATE = True
+    MIXED_PRECISION = True
+    strategy = tf.distribute.MirroredStrategy()
     if MIXED_PRECISION:
         from tensorflow.keras.mixed_precision import experimental as mixed_precision
         policy = tf.keras.mixed_precision.experimental.Policy('mixed_float16')
@@ -74,25 +75,14 @@ def get_data_for_training(base_path, image_path, image_type, balance_data, seed)
     return train_df, val_df
 
 
-def train_model(train_df, val_df, loss, metrics, optimizer, epochs, batch_size, img_size, num_classes, save_output, seed):
+def train_model(model, train_df, val_df, epochs, batch_size, img_size, save_output, seed):
 
     # call the generator functions
     train_gen = get_training_gen(train_df, seed, img_size, batch_size)
     val_gen = get_validation_gen(val_df, seed, img_size, batch_size)
     valX, valY = val_gen.next()
 
-    model, callback_list = create_model(
-        num_classes,
-        VERBOSE_LEVEL,
-        save_output,
-        timestamp
-    )
-
-    model.compile(
-        loss=loss,
-        metrics=metrics,
-        optimizer=optimizer,
-    )
+    callback_list = get_model_callbacks(VERBOSE_LEVEL, save_output, timestamp)
 
     history = model.fit(
         train_gen,
@@ -126,7 +116,7 @@ def main():
     path_to_images = os.path.join(CWD, 'data')
 
     epochs = 40
-    batch_size = 64
+    batch_size = 32
     learning_rate = 1e-4
     optimizer = Adam(lr=learning_rate)
     loss = 'binary_crossentropy'
@@ -137,8 +127,9 @@ def main():
 
     # config depending on data
     balance_dataset = True
-    img_size = (224, 224)
-    image_type = ".png"
+    img_size = (600, 600)
+    img_shape = (600, 600, 3)
+    image_type = ".jpg"
     num_classes = 2
 
     train_df, val_df = get_data_for_training(
@@ -149,16 +140,20 @@ def main():
         SEED
     )
 
+    model = create_model(img_shape, num_classes)
+    model.compile(
+        loss=loss,
+        metrics=metrics,
+        optimizer=optimizer,
+    )
+
     train_model(
+        model,
         train_df,
         val_df,
-        loss,
-        metrics,
-        optimizer,
         epochs,
         batch_size,
         img_size,
-        num_classes,
         save_output,
         SEED
     )
