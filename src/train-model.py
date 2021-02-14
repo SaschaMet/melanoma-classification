@@ -127,8 +127,8 @@ def main():
 
     # config depending on data
     balance_dataset = True
-    img_size = (600, 600)
-    img_shape = (600, 600, 3)
+    img_size = (768, 768)
+    img_shape = (768, 768, 3)
     image_type = ".jpg"
     num_classes = 2
 

@@ -1,13 +1,13 @@
 import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.applications import EfficientNetB5
+from tensorflow.keras.applications import ResNet152V2
 
 
 def get_pretrained_model(img_shape):
     strategy = tf.distribute.get_strategy()
     with strategy.scope():
-        pretrained_model = EfficientNetB5(
+        pretrained_model = ResNet152V2(
             include_top=False,
             weights="imagenet",
             input_tensor=Sequential([])(layers.Input(shape=img_shape)),
@@ -17,7 +17,7 @@ def get_pretrained_model(img_shape):
     for idx, layer in enumerate(pretrained_model.layers):
         layer.trainable = False
         if not isinstance(layer, layers.BatchNormalization):
-            if "block6" in layer.name or "block7" in layer.name:
+            if "conv5" in layer.name:
                 layer.trainable = True
         print("layer", idx + 1, ":", layer.name,
               "is trainable:", layer.trainable)
