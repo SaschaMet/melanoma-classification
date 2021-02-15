@@ -10,9 +10,8 @@ from model.create_model import create_model
 from utils.create_splits import create_splits
 from model.model_callbacks import get_model_callbacks
 from utils.get_data import get_datasets, balance_dataset
-from data.create_tf_records import create_tf_record_from_df
-from utils.data_generator import get_training_gen, get_validation_gen
 from data.get_tf_records import get_dataset, verify_tf_records
+from utils.data_generator import get_training_gen, get_validation_gen
 
 
 SEED = 1
@@ -44,33 +43,17 @@ timestamp = str(today) + "_" + str(current_time)
 # Tensorflow execution optimizations
 # Source: https://www.tensorflow.org/guide/mixed_precision & https://www.tensorflow.org/xla
 print("Tensorflow version " + tf.__version__)
-print("try connecting to TPU")
-try:
-    DEVICE = "TPU"
-    tpu = tf.distribute.cluster_resolver.TPUClusterResolver()
-    tf.config.experimental_connect_to_cluster(tpu)
-    tf.tpu.experimental.initialize_tpu_system(tpu)
-    strategy = tf.distribute.experimental.TPUStrategy(tpu)
-    print('Running on TPU ', tpu.master())
-except ValueError:
-    print("Could not connect to TPU")
-    DEVICE = "GPU"
-
-if DEVICE != "TPU":
-    print("Using default strategy for CPU and single GPU")
-    strategy = tf.distribute.get_strategy()
-
+strategy = tf.distribute.get_strategy()
 num_gpus = len(
-    tf.config.experimental.list_physical_devices('GPU'))
+    tf.config.experimental.list_physical_devices('GPU')
+)
 
 if num_gpus > 0:
     print("Num GPUs Available: ", num_gpus)
-
     from tensorflow.keras.mixed_precision import experimental as mixed_precision
     policy = tf.keras.mixed_precision.experimental.Policy('mixed_float16')
     mixed_precision.set_policy(policy)
     print('Mixed precision enabled')
-
     tf.config.optimizer.set_jit(True)
     print('Accelerated Linear Algebra enabled')
 
@@ -78,61 +61,6 @@ if num_gpus > 0:
 AUTO = tf.data.experimental.AUTOTUNE
 REPLICAS = strategy.num_replicas_in_sync
 print(f'REPLICAS: {REPLICAS}')
-
-
-def get_data_for_training(base_path, image_path, image_type, balance_data, seed, prepare_df):
-    train, test = get_datasets(base_path, image_path, image_type, prepare_df)
-
-    if balance_data:
-        train = balance_dataset(train)
-
-    # create a training and validation dataset from the train df
-    train_df, val_df = create_splits(train, 0.2, 'target', seed)
-
-    print("rows in train_df", train_df.shape[0])
-    print("rows in val_df", val_df.shape[0])
-
-    return train_df, val_df
-
-
-def train_model(model, train_df, val_df, epochs, batch_size, img_size, save_output, seed, base_path):
-
-    callback_list = get_model_callbacks(VERBOSE_LEVEL, save_output, timestamp)
-
-    if DEVICE == "TPU":
-        train_records = base_path + "/data/tfrecords/train.tfrec"
-        test_records = base_path + "/data/tfrecords/test.tfrec"
-
-        TRAIN_STEPS = len(train_df) // batch_size
-        VALIDATION_STEPS = - (-len(val_df) // batch_size)
-
-        history = model.fit(
-            get_dataset(train_records),
-            steps_per_epoch=TRAIN_STEPS,
-            epochs=epochs,
-            validation_data=get_dataset(test_records, False),
-            validation_steps=VALIDATION_STEPS,
-            callbacks=callback_list,
-        )
-    else:
-        # call the generator functions
-        train_gen = get_training_gen(train_df, seed, img_size, batch_size)
-        val_gen = get_validation_gen(val_df, seed, img_size, batch_size)
-        valX, valY = val_gen.next()
-        history = model.fit(
-            train_gen,
-            epochs=epochs,
-            verbose=VERBOSE_LEVEL,
-            callbacks=callback_list,
-            validation_data=(valX, valY),
-        )
-
-    print("Done with training")
-
-    print("Start evaluating")
-    evaluate_model(model, val_df, history, timestamp, img_size)
-
-    print("Done")
 
 
 def main():
@@ -162,55 +90,10 @@ def main():
 
     # config depending on data
     balance_dataset = True
+
+    num_classes = 2
     img_size = (1024, 1024)
     img_shape = (1024, 1024, 3)
-    image_type = ".jpg"
-    num_classes = 2
-    prepare_df = False
-
-    train_df, val_df = get_data_for_training(
-        base_path,
-        path_to_images,
-        image_type,
-        balance_dataset,
-        SEED,
-        prepare_df
-    )
-
-    # # because we do not need the classToPredict column anymore we can drop it
-    # train_data.drop([classToPredict], axis=1, inplace=True)
-    # val_data.drop([classToPredict], axis=1, inplace=True)
-
-    create_tf_record_from_df(base_path, train_df, "data/tfrecords/train.tfrec")
-    create_tf_record_from_df(base_path, val_df, "data/tfrecords/val.tfrec")
-
-    train_records = base_path + "/data/tfrecords/train.tfrec"
-    test_records = base_path + "/data/tfrecords/test.tfrec"
-
-    print("verify train records")
-    verify_tf_records(base_path, train_records)
-
-    print("verify test records")
-    verify_tf_records(test_records, test_records)
-
-    model = create_model(img_shape, num_classes)
-    model.compile(
-        loss=loss,
-        metrics=metrics,
-        optimizer=optimizer,
-    )
-
-    train_model(
-        model,
-        train_df,
-        val_df,
-        epochs,
-        batch_size,
-        img_size,
-        save_output,
-        SEED,
-        base_path
-    )
 
 
 main()

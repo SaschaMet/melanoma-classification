@@ -1,17 +1,8 @@
 import os
 import json
-import shutil
 
 
 def download_dataset():
-    CWD = os.getcwd()
-
-    print("Delete data dir")
-    try:
-        shutil.rmtree(CWD + "/data")
-    except:
-        pass
-
     print("Download data")
 
     # check were the kaggle auth file is stored
@@ -30,14 +21,13 @@ def download_dataset():
 
     # go to data directory and download dataset
     os.system(
-        'cd data && kaggle datasets download -d cdeotte/jpeg-melanoma-1024x1024')
+        'cd data && kaggle datasets download -d cdeotte/melanoma-1024x1024')
 
     # unzip the zip file
-    os.system('cd data && unzip jpeg-melanoma-1024x1024.zip')
+    os.system('cd data && unzip -o melanoma-1024x1024.zip')
 
     # remove the not needed files
-    os.system('cd data && rm jpeg-melanoma-1024x1024.zip')
-    os.system('cd data && rm sample_submission.csv')
+    os.system('cd data && rm melanoma-1024x1024.zip')
 
 
 download_dataset()
