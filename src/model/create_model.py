@@ -19,8 +19,8 @@ def get_pretrained_model(img_shape):
         if not isinstance(layer, layers.BatchNormalization):
             if "conv5" in layer.name:
                 layer.trainable = True
-        print("layer", idx + 1, ":", layer.name,
-              "is trainable:", layer.trainable)
+        # print("layer", idx + 1, ":", layer.name,
+        #       "is trainable:", layer.trainable)
 
     return pretrained_model
 
