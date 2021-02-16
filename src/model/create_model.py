@@ -33,26 +33,26 @@ def create_model(img_shape, num_classes):
     with strategy.scope():
         model = Sequential()
 
-    # add the pretrained model
-    pretrained_model = get_pretrained_model(img_shape)
-    model.add(pretrained_model)
+        # add the pretrained model
+        pretrained_model = get_pretrained_model(img_shape)
+        model.add(pretrained_model)
 
-    model.add(layers.GlobalAveragePooling2D())
+        model.add(layers.GlobalAveragePooling2D())
 
-    model.add(layers.Dense(1024, activation='relu'))
-    model.add(layers.Dropout(0.3))
+        model.add(layers.Dense(1024, activation='relu'))
+        model.add(layers.Dropout(0.3))
 
-    model.add(layers.Dense(512, activation='relu'))
-    model.add(layers.Dropout(0.3))
+        model.add(layers.Dense(512, activation='relu'))
+        model.add(layers.Dropout(0.3))
 
-    model.add(layers.Dense(256, activation='relu'))
-    model.add(layers.Dropout(0.3))
+        model.add(layers.Dense(256, activation='relu'))
+        model.add(layers.Dropout(0.3))
 
-    model.add(layers.Dense(128, activation='relu'))
-    model.add(layers.Dropout(0.3))
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dropout(0.3))
 
-    model.add(layers.Dense(num_classes, activation='softmax'))
+        model.add(layers.Dense(num_classes, activation='softmax'))
 
-    model.summary()
+        model.summary()
 
     return model
