@@ -21,7 +21,7 @@ def download_dataset():
         'cd data && kaggle datasets download -d cdeotte/melanoma-1024x1024')
 
     # unzip the zip file
-    os.system('cd data && unzip melanoma-1024x1024.zip')
+    os.system('cd data && unzip -o melanoma-1024x1024.zip')
 
     # remove the not needed files
     os.system('cd data && rm melanoma-1024x1024.zip')
