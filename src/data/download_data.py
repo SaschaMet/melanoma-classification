@@ -16,15 +16,17 @@ def download_dataset():
         os.environ['KAGGLE_USERNAME'] = data["username"]
         os.environ['KAGGLE_KEY'] = data["key"]
 
+    os.system('mkdir data')
+
     # go to data directory and download dataset
     os.system(
-        'cd data && kaggle datasets download -d cdeotte/melanoma-1024x1024')
+        'cd data && kaggle datasets download -d cdeotte/melanoma-512x512')
 
     # unzip the zip file
-    os.system('cd data && unzip -o melanoma-1024x1024.zip')
+    os.system('cd data && unzip -o melanoma-512x512.zip')
 
     # remove the not needed files
-    os.system('cd data && rm melanoma-1024x1024.zip')
+    os.system('cd data && rm melanoma-512x512.zip')
 
 
 download_dataset()

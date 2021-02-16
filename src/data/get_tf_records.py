@@ -1,36 +1,25 @@
 import re
-import os
 import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
-AUTO = tf.data.experimental.AUTOTUNE
-cfg = dict(
-    read_size=1024,
-    crop_size=500,
-    net_size=448,
-)
+strategy = tf.distribute.get_strategy()
+REPLICAS = strategy.num_replicas_in_sync
+AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 
-def verify_tf_records(base_path, subfolder, TFRECORDS):
-    labeled = "train" == subfolder
-    _, ax = plt.subplots(5, 2, figsize=(10, 25))
-    ds = get_dataset(TFRECORDS, labeled=labeled).unbatch().take(5)
-    for idx, item in enumerate(ds):
-        print(ax[idx][0].imshow(item[0][0]))
-        #
-        path_to_data_dir = base_path.split("tfrecords")[0]
-        path_to_img = os.path.join(
-            path_to_data_dir, subfolder, item[1].numpy().decode("utf-8") + '.jpg')
-        print("path_to_data_dir", path_to_data_dir)
-        print("path_to_img", path_to_img)
-        original = plt.imread(path_to_img)
-        print(ax[idx][1].imshow(original))
-        print('Sex: %s, Age: %s, Site: %s' %
-              (item[0][1], item[0][2], item[0][3]))
+def validate_tf_records(dataset):
+    plt.figure(figsize=(10, 10))
+    for images, labels in dataset.take(1):
+        for i in range(6):
+            finding = "Benign" if labels[i].numpy() == 0 else "Malignant"
+            ax = plt.subplot(3, 3, i + 1)
+            plt.imshow(images[i])
+            plt.title(finding)
+            plt.axis("off")
 
 
-def read_labeled_tfrecord(example, return_image_name):
+def read_labeled_tfrecord(example):
     tfrec_format = {
         'image': tf.io.FixedLenFeature([], tf.string),
         'image_name': tf.io.FixedLenFeature([], tf.string),
@@ -42,30 +31,32 @@ def read_labeled_tfrecord(example, return_image_name):
         'target': tf.io.FixedLenFeature([], tf.int64)
     }
     example = tf.io.parse_single_example(example, tfrec_format)
-    return example['image'], example['sex'], example['age_approx'], example['anatom_site_general_challenge'], example['image_name'] if return_image_name else example['target']
+
+    return example['image'], example['target']
 
 
 def read_unlabeled_tfrecord(example, return_image_name):
     tfrec_format = {
         'image': tf.io.FixedLenFeature([], tf.string),
         'image_name': tf.io.FixedLenFeature([], tf.string),
-        'patient_id': tf.io.FixedLenFeature([], tf.int64),
-        'sex': tf.io.FixedLenFeature([], tf.int64),
-        'age_approx': tf.io.FixedLenFeature([], tf.int64),
-        'anatom_site_general_challenge': tf.io.FixedLenFeature([], tf.int64)
     }
     example = tf.io.parse_single_example(example, tfrec_format)
-    print(example['image'])
-    return example['image'], example['sex'], example['age_approx'], example['anatom_site_general_challenge'], example['image_name'] if return_image_name else 0
+    return example['image'], example['image_name'] if return_image_name else 0
 
 
-def prepare_image(img):
+def prepare_image(img, augment=True, dim=256):
     img = tf.image.decode_jpeg(img, channels=3)
-    img = tf.image.resize(img, [cfg['read_size'], cfg['read_size']])
     img = tf.cast(img, tf.float32) / 255.0
-    # img = tf.image.central_crop(img, cfg['crop_size'] / cfg['read_size'])
-    # img = tf.image.resize(img, [cfg['net_size'], cfg['net_size']])
-    # img = tf.reshape(img, [cfg['net_size'], cfg['net_size'], 3])
+
+    if augment:
+        img = tf.image.random_flip_left_right(img)
+        img = tf.image.random_hue(img, 0.01)
+        img = tf.image.random_saturation(img, 0.7, 1.3)
+        img = tf.image.random_contrast(img, 0.8, 1.2)
+        img = tf.image.random_brightness(img, 0.1)
+
+    img = tf.image.resize(img, [dim, dim])
+
     return img
 
 
@@ -75,20 +66,38 @@ def count_data_items(filenames):
     return np.sum(n)
 
 
-def get_dataset(files, labeled=True, return_image_names=True):
-    ds = tf.data.TFRecordDataset(files, num_parallel_reads=AUTO)
+def get_dataset(files, augment=False, shuffle=False, repeat=False,
+                labeled=True, return_image_names=True, batch_size=16, dim=256):
+
+    ignore_order = tf.data.Options()
+    if not labeled:
+        ignore_order.experimental_deterministic = False  # disable order, increase speed
+
+    ds = tf.data.TFRecordDataset(files, num_parallel_reads=AUTOTUNE)
+    ds = ds.with_options(ignore_order)
+
+    ds = ds.cache()
+
+    if repeat:
+        ds = ds.repeat()
+
+    if shuffle:
+        ds = ds.shuffle(1024*8)
+        opt = tf.data.Options()
+        opt.experimental_deterministic = False
+        ds = ds.with_options(opt)
 
     if labeled:
-        ds = ds.map(lambda example: read_labeled_tfrecord(
-            example, return_image_names), num_parallel_calls=AUTO)
+        ds = ds.map(read_labeled_tfrecord, num_parallel_calls=AUTOTUNE)
     else:
         ds = ds.map(lambda example: read_unlabeled_tfrecord(
-            example, return_image_names), num_parallel_calls=AUTO)
+            example, return_image_names), num_parallel_calls=AUTOTUNE)
 
-    ds = ds.map(lambda img, sex, age, site, label: tuple([tuple([prepare_image(img), sex, age, site]), label]),
-                num_parallel_calls=AUTO)
+    ds = ds.map(lambda img, imgname_or_label: (
+        prepare_image(img, augment=augment, dim=dim), imgname_or_label),
+        num_parallel_calls=AUTOTUNE
+    )
 
-    ds = ds.batch(32)
-    ds = ds.prefetch(AUTO)
-
+    ds = ds.batch(batch_size * REPLICAS)
+    ds = ds.prefetch(AUTOTUNE)
     return ds
