@@ -2,8 +2,10 @@ import os
 import random
 import warnings
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from datetime import datetime, date
+from sklearn.model_selection import train_test_split
 
 from model.create_model import create_model
 from data.get_tf_records import get_dataset
@@ -75,10 +77,9 @@ def main():
         cwd = "/content/melanoma-classification"
         print('Running on google colab')
 
-    epochs = 10
-    batch_size = 32
-    learning_rate = 1e-4
-    optimizer = tf.keras.optimizers.Adam(lr=learning_rate)
+    epochs = 50
+    batch_size = 128
+    optimizer = 'adam'
     loss = 'binary_crossentropy'
     metrics = [
         'accuracy',
@@ -89,19 +90,37 @@ def main():
     num_classes = 1
     img_shape = (dim, dim, 3)
 
-    training_tfrecords = tf.io.gfile.glob(cwd + "/data/train*.tfrec")[:10]
-    validation_tfrecords = tf.io.gfile.glob(cwd + "/data/train*.tfrec")[11:16]
+    training_tfrecords, validation_tfrecords = train_test_split(
+        tf.io.gfile.glob(cwd + "/data/train*.tfrec"),
+        test_size=0.2,
+        random_state=SEED
+    )
     test_tfrecords = tf.io.gfile.glob(cwd + "/data/test*.tfrec")
+
+    train_df = pd.read_csv(cwd + '/data/train.csv')
+    malignant = np.count_nonzero(train_df['target'])
+    total_img = train_df['target'].size
+    benign = total_img - malignant
+
+    bias = np.log([malignant/benign])
+
+    weight_for_0 = (1 / benign)*(total_img)/2.0
+    weight_for_1 = (1 / malignant)*(total_img)/2.0
+
+    class_weight = {0: weight_for_0, 1: weight_for_1}
+
+    print('Weight for class 0: {:.2f}'.format(weight_for_0))
+    print('Weight for class 1: {:.2f}'.format(weight_for_1))
 
     print("Train TFRecord Files:", len(training_tfrecords))
     print("Validation TFRecord Files:", len(validation_tfrecords))
     print("Test TFRecord Files:", len(test_tfrecords))
 
-    # files_train = count_data_items(training_tfrecords)
-    # files_val = count_data_items(validation_tfrecords)
+    files_train = count_data_items(training_tfrecords)
+    files_val = count_data_items(validation_tfrecords)
 
-    steps_per_epoch = 200  # files_train/batch_size//REPLICAS
-    validation_steps = 80  # files_val/batch_size//REPLICAS
+    steps_per_epoch = files_train/batch_size//REPLICAS
+    validation_steps = files_val/batch_size//REPLICAS
 
     print("steps_per_epoch", steps_per_epoch)
     print("validation_steps", validation_steps)
@@ -111,23 +130,33 @@ def main():
     val_ds = get_dataset(validation_tfrecords, augment=False,
                          shuffle=False, repeat=False, dim=dim, batch_size=batch_size)
 
-    model = create_model(img_shape, num_classes)
-    model.compile(
-        loss=loss,
-        metrics=metrics,
-        optimizer=optimizer,
-    )
+    with strategy.scope():
 
-    model.fit(
-        train_ds,
-        epochs=epochs,
-        callbacks=get_model_callbacks(VERBOSE_LEVEL, save_output, timestamp),
-        steps_per_epoch=steps_per_epoch,
-        validation_data=val_ds,
-        verbose=VERBOSE_LEVEL
-    )
+        model = create_model(img_shape, num_classes, bias)
 
-    model.save('model_files')
+        model.compile(
+            loss=loss,
+            metrics=metrics,
+            optimizer=optimizer,
+        )
+
+        model.fit(
+            train_ds,
+            epochs=epochs,
+            callbacks=get_model_callbacks(
+                VERBOSE_LEVEL, save_output, timestamp),
+            steps_per_epoch=steps_per_epoch,
+            validation_data=val_ds,
+            verbose=VERBOSE_LEVEL,
+            class_weight=class_weight
+        )
+
+        model.save('model_files')
+
+        # print('Computing predictions...')
+        # images_ds = val_ds.map(lambda image, idnum: image)
+        # probabilities = model.predict(images_ds)
+        # print("probabilities", probabilities)
 
 
 main()

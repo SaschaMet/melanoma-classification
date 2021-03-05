@@ -5,13 +5,11 @@ from tensorflow.keras.applications import ResNet101V2
 
 
 def get_pretrained_model(img_shape):
-    strategy = tf.distribute.get_strategy()
-    with strategy.scope():
-        pretrained_model = ResNet101V2(
-            include_top=False,
-            weights="imagenet",
-            input_tensor=Sequential([])(layers.Input(shape=img_shape)),
-        )
+    pretrained_model = ResNet101V2(
+        include_top=False,
+        weights="imagenet",
+        input_tensor=Sequential([])(layers.Input(shape=img_shape)),
+    )
 
     # We unfreeze some blocks while leaving BatchNorm layers frozen
     for idx, layer in enumerate(pretrained_model.layers):
@@ -25,34 +23,35 @@ def get_pretrained_model(img_shape):
     return pretrained_model
 
 
-def create_model(img_shape, num_classes):
+def create_model(img_shape, num_classes, output_bias=None):
     print("create model")
 
-    # create a new sequentail model
-    strategy = tf.distribute.get_strategy()
-    with strategy.scope():
-        model = Sequential()
+    if output_bias is not None:
+        output_bias = tf.keras.initializers.Constant(output_bias)
 
-        # add the pretrained model
-        pretrained_model = get_pretrained_model(img_shape)
-        model.add(pretrained_model)
+    model = Sequential()
 
-        model.add(layers.GlobalAveragePooling2D())
+    # add the pretrained model
+    pretrained_model = get_pretrained_model(img_shape)
+    model.add(pretrained_model)
 
-        model.add(layers.Dense(1024, activation='relu'))
-        model.add(layers.Dropout(0.3))
+    model.add(layers.GlobalAveragePooling2D())
 
-        model.add(layers.Dense(512, activation='relu'))
-        model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(1024, activation='relu'))
+    model.add(layers.Dropout(0.3))
 
-        model.add(layers.Dense(256, activation='relu'))
-        model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(512, activation='relu'))
+    model.add(layers.Dropout(0.3))
 
-        model.add(layers.Dense(128, activation='relu'))
-        model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(256, activation='relu'))
+    model.add(layers.Dropout(0.3))
 
-        model.add(layers.Dense(num_classes, activation='softmax'))
+    model.add(layers.Dense(128, activation='relu'))
+    model.add(layers.Dropout(0.3))
 
-        model.summary()
+    model.add(layers.Dense(num_classes, activation='softmax',
+                           bias_initializer=output_bias))
+
+    model.summary()
 
     return model
