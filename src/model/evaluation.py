@@ -1,13 +1,11 @@
-import sys
 import json
+import math
 import numpy as np
-from tqdm import tqdm
-import tensorflow as tf
-from tensorflow import keras
 from sklearn.metrics import precision_recall_curve, confusion_matrix
 
-
-sys.path.insert(0, '..')
+from plots.plot_auc import plot_auc
+from plots.plot_history import plot_history
+from plots.plot_confusion_matrix import plot_confusion_matrix
 
 
 def calc_f1(prec, recall):
@@ -38,32 +36,33 @@ def pred_to_binary(pred, threshold):
         return 1
 
 
-def evaluate_model(model, val_df, history, timestamp, img_size):
-    from plots.plot_auc import plot_auc  # isort:skip
-    from plots.plot_history import plot_history  # isort:skip
-    from plots.plot_confusion_matrix import plot_confusion_matrix  # isort:skip
+def predict_on_dataset(model, dataset, number_of_images, test_batch_size=50):
+    steps = math.ceil(number_of_images / test_batch_size)
+    dataset = dataset.unbatch().batch(test_batch_size)
 
-    y_t = []  # true labels
-    y_p = []  # predictions
+    _, labels = tuple(zip(*dataset))
 
-    # iterate over the validation df and make a prediction for each image
-    for i in tqdm(range(val_df.shape[0])):
-        y_true = val_df.iloc[i].target_1
-        image_path = val_df.iloc[i].image_path
+    label_list = []
+    for i in range(steps):
+        for item in labels[i].numpy().flatten():
+            # read the target variable as the label
+            label_list.append(item)
 
-        img = keras.preprocessing.image.load_img(
-            image_path, target_size=img_size)
-        img = keras.preprocessing.image.img_to_array(img)
-        img = img / 255
-        img_array = tf.expand_dims(img, 0)
-        y_pred = model.predict(img_array)
-        y_pred = tf.nn.softmax(y_pred)[0].numpy()[1]
+    print("start predicting ...")
 
-        y_t.append(y_true)
-        y_p.append(y_pred)
+    dataset = dataset.map(lambda image, idnum: image)
+    predictions = model.predict(dataset, steps=steps, verbose=1)
+    predictions = predictions.flatten().tolist()
+    predictions = [round(num, 4) for num in predictions]
+
+    return predictions, label_list
+
+
+def evaluate_model(model, dataset, history, number_of_images, save_output, timestamp):
+    predictions, labels = predict_on_dataset(model, dataset, number_of_images)
 
     # calculate the precision, recall and the thresholds
-    precision, recall, thresholds = precision_recall_curve(y_t, y_p)
+    precision, recall, thresholds = precision_recall_curve(labels, predictions)
 
     # calculate the f1 score
     f1score = [calc_f1(precision[i], recall[i])
@@ -83,28 +82,29 @@ def evaluate_model(model, val_df, history, timestamp, img_size):
     print('Threshold:', threshold)
     print('F1 Score:', f1score)
 
-    # save the metrics
-    metrics = {
-        'f1score': str(f1score),
-        'precision': str(precision),
-        'recall': str(recall),
-        'threshold': str(threshold),
-    }
+    if save_output:
+        # save the metrics
+        metrics = {
+            'f1score': str(f1score),
+            'precision': str(precision),
+            'recall': str(recall),
+            'threshold': str(threshold),
+        }
 
-    with open('metrics.txt', 'w') as file:
-        file.write(json.dumps(metrics))
+        with open('metrics.txt', 'w') as file:
+            file.write(json.dumps(metrics))
 
     # create a confusion matrix
-    y_pred_binary = [pred_to_binary(x, threshold) for x in y_p]
-    cm = confusion_matrix(y_t, y_pred_binary)
+    y_pred_binary = [pred_to_binary(x, threshold) for x in predictions]
+    cm = confusion_matrix(labels, y_pred_binary)
 
     cm_plot_label = ['benign', 'malignant']
-    plot_confusion_matrix(cm, cm_plot_label, timestamp)
+    plot_confusion_matrix(cm, cm_plot_label, timestamp, save_output)
 
     # plot model history
-    plot_history(history.history, timestamp)
+    plot_history(history.history, timestamp, save_output)
 
     # plot auc
-    plot_auc(y_t, y_p, timestamp)
+    plot_auc(labels, predictions, timestamp, save_output)
 
-    return y_t, y_p
+    return predictions, labels, threshold

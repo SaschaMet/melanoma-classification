@@ -1,6 +1,9 @@
 import re
+import os
 import numpy as np
 import tensorflow as tf
+
+from data.data_augmentation import augmentation_pipeline
 
 AUTOTUNE = tf.data.AUTOTUNE
 
@@ -11,20 +14,13 @@ def count_data_items(filenames):
     return np.sum(n)
 
 
-def decode_image(image_data, dim):
+def decode_image(image_data):
+    dim = int(os.environ["DIM"])
     image = tf.image.decode_jpeg(image_data, channels=3)
     # explicit size needed for TPU
     image = tf.reshape(image, [dim, dim, 3])
 
     return image
-
-
-def augmentation_pipeline(image, label, seed):
-    image = tf.image.random_flip_left_right(image, seed=seed)
-    image = tf.image.random_flip_up_down(image, seed=seed)
-    image = tf.image.random_hue(image, 0.1, seed=seed)
-    image = tf.image.random_saturation(image, 0, 1, seed=seed)
-    return image, label
 
 
 def read_labeled_tfrecord(example):
@@ -74,33 +70,38 @@ def load_test_dataset(filenames):
     return dataset
 
 
-def get_training_dataset(TRAINING_FILENAMES, batch_size, augment=True):
-    dataset = load_dataset(TRAINING_FILENAMES)
-    dataset = dataset.cache()
+def get_training_dataset(training_filenames, batch_size, tpu, shuffle=True, augment=True):
+    buffer_size = 512
+    if tpu:
+        buffer_size = 2048  # increase buffer size if we have a tpu
+
+    dataset = load_dataset(training_filenames)
+    if tpu:
+        # if we have no tpu we do not have to cache the data
+        dataset = dataset.cache()
     if augment:
         dataset = dataset.map(augmentation_pipeline,
                               num_parallel_calls=AUTOTUNE)
     dataset = dataset.repeat()  # the training dataset must repeat for several epochs
-    dataset = dataset.shuffle(2048)
+    dataset = dataset.shuffle(buffer_size)
     dataset = dataset.batch(batch_size)
     # prefetch next batch while training (autotune prefetch buffer size)
     dataset = dataset.prefetch(AUTOTUNE)
     return dataset
 
 
-def get_validation_dataset(VALIDATION_FILENAMES, batch_size, ):
-    dataset = load_dataset(VALIDATION_FILENAMES)
-    dataset = dataset.cache()
+def get_validation_dataset(validation_filenames, batch_size, tpu):
+    dataset = load_dataset(validation_filenames)
+    if tpu:
+        dataset = dataset.cache()
     dataset = dataset.batch(batch_size)
-    # prefetch next batch while validation (autotune prefetch buffer size)
     dataset = dataset.prefetch(AUTOTUNE)
     return dataset
 
 
-def get_test_dataset(TEST_FILENAMES, batch_size, ):
-    dataset = load_test_dataset(TEST_FILENAMES)
+def get_test_dataset(test_filenames, batch_size):
+    dataset = load_test_dataset(test_filenames)
     dataset = dataset.cache()
     dataset = dataset.batch(batch_size)
-    # prefetch next batch while test (autotune prefetch buffer size)
     dataset = dataset.prefetch(AUTOTUNE)
     return dataset

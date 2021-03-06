@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_confusion_matrix(cm, labels, timestamp):
+def plot_confusion_matrix(cm, labels, timestamp, save_output):
     """ Helper function to plot a confusion matrix
 
         Parameters:
@@ -27,4 +27,6 @@ def plot_confusion_matrix(cm, labels, timestamp):
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.tight_layout()
-    plt.savefig("./" + timestamp + "-cm.png")
+
+    if save_output:
+        plt.savefig("./" + timestamp + "-cm.png")

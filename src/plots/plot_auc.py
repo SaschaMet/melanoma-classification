@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 
 
-def plot_auc(t_y, p_y, timestamp):
+def plot_auc(t_y, p_y, timestamp, save_output):
     """ Helper function to plot the auc curve
 
     Parameters:
@@ -19,4 +19,5 @@ def plot_auc(t_y, p_y, timestamp):
     c_ax.legend()
     c_ax.set_xlabel('False Positive Rate')
     c_ax.set_ylabel('True Positive Rate')
-    plt.savefig("./" + timestamp + "-auc.png")
+    if save_output:
+        plt.savefig("./" + timestamp + "-auc.png")

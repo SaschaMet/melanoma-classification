@@ -2,7 +2,7 @@ import json
 import matplotlib.pyplot as plt
 
 
-def plot_history(history, timestamp):
+def plot_history(history, timestamp, save_output):
     """ Helper function to plot the history of a tensorflow model
 
         Parameters:
@@ -27,6 +27,7 @@ def plot_history(history, timestamp):
     plt.legend()
     plt.title("Modell Accuracy")
 
-    plt.savefig("./" + timestamp + "-history.png")
-    with open("./" + timestamp + "-history.json", 'w') as f:
-        json.dump(history, f)
+    if save_output:
+        plt.savefig("./" + timestamp + "-history.png")
+        with open("./" + timestamp + "-history.json", 'w') as f:
+            json.dump(history, f)

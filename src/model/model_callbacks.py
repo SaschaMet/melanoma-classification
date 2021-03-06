@@ -1,34 +1,62 @@
+import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard, LearningRateScheduler
 
 
-def exponential_decay(lr0, s):
-    def exponential_decay_fn(epoch):
-        return lr0 * 0.1 ** (epoch / s)
-    return exponential_decay_fn
+def get_lr_callback(strategy, epochs):
+    # Source: https://colab.research.google.com/github/GoogleCloudPlatform/training-data-analyst/blob/master/courses/fast-and-lean-data-science/07_Keras_Flowers_TPU_xception_fine_tuned_best.ipynb#scrollTo=M-ID7vP5mIKs
+    start_lr = 0.00001
+    min_lr = 0.000001
+    max_lr = 0.00005 * strategy.num_replicas_in_sync
+    rampup_epochs = 5
+    sustain_epochs = 0
+    exp_decay = .8
+
+    def lrfn(epoch):
+        def lr(epoch, start_lr, min_lr, max_lr, rampup_epochs, sustain_epochs, exp_decay):
+            if epoch < rampup_epochs:
+                lr = (max_lr - start_lr)/rampup_epochs * epoch + start_lr
+            elif epoch < rampup_epochs + sustain_epochs:
+                lr = max_lr
+            else:
+                lr = (max_lr - min_lr) * exp_decay**(epoch -
+                                                     rampup_epochs-sustain_epochs) + min_lr
+            return lr
+
+        return lr(epoch, start_lr, min_lr, max_lr, rampup_epochs, sustain_epochs, exp_decay)
+
+    lr_callback = LearningRateScheduler(
+        lambda epoch: lrfn(epoch), verbose=True)
+
+    print("learning rate decay")
+    rng = [i for i in range(epochs)]
+    y = [lrfn(x) for x in rng]
+    print(plt.plot(rng, [lrfn(x) for x in rng]))
+    print(y[0], y[-1])
+
+    return lr_callback
 
 
-def get_model_callbacks(verbose_level, save_output, timestamp):
+def get_model_callbacks(strategy, epochs, verbose_level, save_output, timestamp, use_tensorboard=False):
     # model callbacks
     callback_list = []
 
+    lr_callback = get_lr_callback(strategy, epochs)
+    callback_list.append(lr_callback)
+
     # if the model does not improve for 10 epochs, stop the training
     stop_early = EarlyStopping(
-        monitor='val_loss',
-        mode='auto',
+        monitor='val_auc',
+        mode='max',
         patience=10,
         restore_best_weights=True
     )
     callback_list.append(stop_early)
 
-    # add tensorboard
-    log_dir = "logs/fit/" + timestamp
-    tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
-    callback_list.append(tensorboard_callback)
-
-    # learning rate decay
-    exponential_decay_fn = exponential_decay(0.01, 20)
-    lr_scheduler = LearningRateScheduler(exponential_decay_fn)
-    callback_list.append(lr_scheduler)
+    # add tensorboard when we can use it
+    if use_tensorboard:
+        log_dir = "logs/fit/" + timestamp
+        tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
+        callback_list.append(tensorboard_callback)
 
     # if the output of the model should be saved, create a checkpoint callback function
     if save_output:
@@ -40,9 +68,9 @@ def get_model_callbacks(verbose_level, save_output, timestamp):
             save_weights_only=True,
             verbose=verbose_level,
             save_best_only=True,
-            monitor='val_loss',
+            monitor='val_auc',
             overwrite=True,
-            mode='auto',
+            mode='max',
         )
         # append the checkpoint callback to the callback list
         callback_list.append(checkpoint)
