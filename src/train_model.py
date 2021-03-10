@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime, date
 from tensorflow.keras import backend as K
 
-from data.load_tf_records import count_data_items, get_training_dataset, get_validation_dataset
+from data.load_tf_records import count_data_items, get_training_dataset, get_validation_dataset, get_prediction_validation_dataset
 from data.verify_tf_records import display_batch_of_images
 from model.model_callbacks import get_model_callbacks
 from model.evaluation import evaluate_model
@@ -249,11 +249,10 @@ def main():
     print(" ")
     print("Start evaluation process")
     print(" ")
-    example_validation_dataset = get_validation_dataset(
-        VALIDATION_FILENAMES, BATCH_SIZE, tpu)
-    validation_images = count_data_items(VALIDATION_FILENAMES)
+    example_validation_dataset = get_prediction_validation_dataset(
+        VALIDATION_FILENAMES, BATCH_SIZE)
     predictions, _, threshold = evaluate_model(model, example_validation_dataset, history,
-                                               validation_images, SAVE_OUTPUT, timestamp)
+                                               SAVE_OUTPUT, timestamp)
     predictions_mapped = [0 if x < threshold else 1 for x in predictions]
 
     example_validation_dataset = example_validation_dataset.unbatch().batch(20)
