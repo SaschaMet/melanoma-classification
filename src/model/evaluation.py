@@ -1,10 +1,9 @@
 import json
-import math
 import numpy as np
 from sklearn.metrics import precision_recall_curve, confusion_matrix
 
 from plots.plot_auc import plot_auc
-from plots.plot_history import plot_history
+from plots.plot_model_metrics import plot_metrics
 from plots.plot_confusion_matrix import plot_confusion_matrix
 
 
@@ -36,16 +35,25 @@ def pred_to_binary(pred, threshold):
         return 1
 
 
-def predict_on_dataset(model, dataset, number_of_images):
-    dataset = dataset.unbatch().batch(number_of_images, drop_remainder=True)
-    images, labels = tuple(zip(*dataset))
-    labels = labels[0].numpy()
-    predictions = model.predict(images[0], verbose=1)
+def predict_on_dataset(model, dataset):
+    print("start predicting ...")
+    labels = []
+    predictions = []
+
+    for image_batch, label_batch in iter(dataset):
+        labels.append(label_batch.numpy())
+        batch_predictions = model.predict(image_batch)
+        predictions.append(batch_predictions)
+
+    # flatten the lists
+    labels = [item for sublist in labels for item in sublist]
+    predictions = [item[0] for sublist in predictions for item in sublist]
     return predictions, labels
 
 
-def evaluate_model(model, dataset, history, number_of_images, save_output, timestamp):
-    predictions, labels = predict_on_dataset(model, dataset, number_of_images)
+def evaluate_model(model, dataset, history, save_output, timestamp):
+
+    predictions, labels = predict_on_dataset(model, dataset)
 
     # calculate the precision, recall and the thresholds
     precision, recall, thresholds = precision_recall_curve(labels, predictions)
@@ -88,7 +96,7 @@ def evaluate_model(model, dataset, history, number_of_images, save_output, times
     plot_confusion_matrix(cm, cm_plot_label, timestamp, save_output)
 
     # plot model history
-    plot_history(history.history, timestamp, save_output)
+    plot_metrics(history, timestamp, save_output)
 
     # plot auc
     plot_auc(labels, predictions, timestamp, save_output)

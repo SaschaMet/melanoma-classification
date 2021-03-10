@@ -44,7 +44,7 @@ def get_model_callbacks(strategy, epochs, verbose_level, save_output, timestamp,
 
     # if the model does not improve for 10 epochs, stop the training
     stop_early = EarlyStopping(
-        monitor='val_auc',
+        monitor='val_loss',
         mode='max',
         patience=10,
         restore_best_weights=True
@@ -67,7 +67,7 @@ def get_model_callbacks(strategy, epochs, verbose_level, save_output, timestamp,
             save_weights_only=True,
             verbose=verbose_level,
             save_best_only=True,
-            monitor='val_auc',
+            monitor='val_loss',
             overwrite=True,
             mode='max',
         )
