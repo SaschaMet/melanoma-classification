@@ -1,0 +1,28 @@
+## install kaggle
+%%capture
+!pip install kaggle
+
+import os
+import json
+
+if not os.path.exists('/content/gdrive'):
+    from google.colab import drive
+    drive.mount("/content/gdrive")
+
+path_to_your_kaggle_json_file = ""
+
+with open(path_to_your_kaggle_json_file) as json_file:
+    data = json.load(json_file)
+    os.environ['KAGGLE_USERNAME'] = data["username"]
+    os.environ['KAGGLE_KEY'] = data["key"]
+
+
+## download the dataset
+!mkdir data
+!cd data && kaggle datasets download -d arroqc/siic-isic-224x224-images && unzip siic-isic-224x224-images.zip
+!cd /content/data && curl -OL https://raw.githubusercontent.com/SaschaMet/melanoma-classification/master/data/test.csv
+!cd /content/data && curl -OL https://raw.githubusercontent.com/SaschaMet/melanoma-classification/master/data/train.csv
+
+
+## submit submisson.csv file
+#!kaggle competitions submit -c siim-isic-melanoma-classification -f submission.csv -m "Sub"

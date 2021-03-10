@@ -1,4 +1,4 @@
-numpy==1.18
+numpy
 tensorflow
 tensorflow_addons
 pandas
@@ -6,7 +6,8 @@ sklearn
 ipykernel
 seaborn
 matplotlib
-keras
 kaggle
 pandas-profiling
-ipython
+tqdm
+opencv-python
+h5py==2.10.0

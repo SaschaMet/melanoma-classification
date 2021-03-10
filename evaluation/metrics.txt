@@ -1,0 +1,1 @@
+{"f1score": "0.8199", "precision": "0.7269", "recall": "0.9402", "threshold": "0.2299"}
