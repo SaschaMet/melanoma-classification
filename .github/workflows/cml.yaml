@@ -13,13 +13,17 @@ jobs:
           # Report metrics
           echo "## Metrics" >> report.md
           echo >> report.md
+          
           echo "### Current Metrics" >> report.md
           cat evaluation/current_metrics.txt >> report.md
           echo >> report.md
+          
           echo "### New Metrics" >> report.md
           echo >> report.md
-          echo "### Plots" >> report.md
           cat evaluation/metrics.txt >> report.md
+          
+          echo "### Plots" >> report.md
+          echo >> report.md
           cml-publish evaluation/history.png --md --title 'history' >> report.md
           cml-publish evaluation/auc.png --md --title 'AUC' >> report.md
           cml-publish evaluation/cm.png --md --title 'confusion-matrix' >> report.md
