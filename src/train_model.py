@@ -3,15 +3,12 @@ import sys
 import random
 import warnings
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 from pathlib import Path
-from tensorflow.keras import layers
 from datetime import datetime, date
 from tensorflow.keras import backend as K
 
 from data.load_tf_records import count_data_items, get_training_dataset, get_validation_dataset
-from data.validation import get_class_distribution_of_dataset
 from data.verify_tf_records import display_batch_of_images
 from model.model_callbacks import get_model_callbacks
 from model.evaluation import evaluate_model
@@ -82,27 +79,24 @@ else:
     print("REPLICAS:", REPLICAS)
 
 
-def get_model_metrics():
+def get_model_parameters():
+    optimizer = 'adam'
     loss = 'binary_crossentropy'
     metrics = [
         tf.keras.metrics.BinaryAccuracy(name='accuracy'),
         tf.keras.metrics.AUC(name='auc'),
-        tf.keras.metrics.Precision(name="precision"),
-        tf.keras.metrics.Recall(name="recall"),
     ]
 
-    return loss, metrics
+    return loss, metrics, optimizer
 
 
 def main():
     DIM = 768
     EPOCHS = 50
-    BATCH_SIZE = 4
+    BATCH_SIZE = 16
     NUM_CLASSES = 1
     SAVE_OUTPUT = True
     USE_TENSORBOARD = True
-
-    os.environ["DIM"] = str(DIM)
 
     if tpu:
         BATCH_SIZE = 128  # increase the batch size if we have a tpu
@@ -110,53 +104,54 @@ def main():
         SAVE_OUTPUT = False
         USE_TENSORBOARD = False
 
-    print("BATCH_SIZE", BATCH_SIZE)
+    # Set needed env variables based on the global variables
+    os.environ["DIM"] = str(DIM)
+    os.environ["BATCH_SIZE"] = str(BATCH_SIZE)
 
-    PATH_TO_TRAIN_FILES = os.environ["PATH_TO_TRAIN_FILES"]
-    TRAINING_FILENAMES = tf.io.gfile.glob(
-        PATH_TO_TRAIN_FILES + '/*train*.tfrec')
-    VALIDATION_FILENAMES = tf.io.gfile.glob(
-        PATH_TO_TRAIN_FILES + '/*val*.tfrec')
+    # Get the data
+    MALIGNANT_IMAGES = tf.io.gfile.glob(os.environ["PATH_TO_MALIGNANT_FILES"])
+    BENIGN_IMAGES = tf.io.gfile.glob(os.environ["PATH_TO_BENIGN_FILES"])
+    TEST_FILENAMES = tf.io.gfile.glob(os.environ["PATH_TO_TEST_FILES"])
 
-    print("Number of train files", len(TRAINING_FILENAMES))
-    print("Number of validation files", len(VALIDATION_FILENAMES))
+    print('There are', count_data_items(MALIGNANT_IMAGES),
+          'malignant images in', len(MALIGNANT_IMAGES), 'files')
 
-    PATH_TO_TEST_FILES = os.environ["PATH_TO_TEST_FILES"]
-    TEST_FILENAMES = tf.io.gfile.glob(PATH_TO_TEST_FILES + '/*test*.tfrec')
-    print("Number of test files", len(TEST_FILENAMES))
+    print('There are', count_data_items(BENIGN_IMAGES),
+          'benign images in', len(BENIGN_IMAGES), 'files')
 
-    print('There are', count_data_items(TRAINING_FILENAMES), 'train images')
-    print('There are', count_data_items(VALIDATION_FILENAMES), 'val images')
-    print('There are', count_data_items(TEST_FILENAMES), 'test images')
+    print('There are', count_data_items(TEST_FILENAMES),
+          'test images in', len(TEST_FILENAMES), 'files')
 
-    training_dataset = get_training_dataset(
-        TRAINING_FILENAMES, BATCH_SIZE, tpu)
-    validation_dataset = get_validation_dataset(
-        VALIDATION_FILENAMES, BATCH_SIZE, tpu)
+    # Create the Training and Validation Dataset
+    print("Creating datasets...")
+    TRAINING_FILENAMES = [
+        MALIGNANT_IMAGES[0],
+        MALIGNANT_IMAGES[1],
+        BENIGN_IMAGES[0],
+        BENIGN_IMAGES[1]
+    ]
 
-    print("Calculate the class distribution")
-    train_csv = pd.read_csv("data/train.csv")
-    malignant_cases, benign_cases = get_class_distribution_of_dataset(
-        train_csv)
+    VALIDATION_FILENAMES = [
+        MALIGNANT_IMAGES[2],
+        BENIGN_IMAGES[39]
+    ]
 
-    bias = np.log([malignant_cases/benign_cases])
-    output_bias = tf.keras.initializers.Constant(bias)
+    print('There are', count_data_items(TRAINING_FILENAMES), 'training images')
+    print('There are', count_data_items(
+        VALIDATION_FILENAMES), 'validation images')
 
-    # Increase the steps per epoch by MULTIPLIER if we train on a TPU
-    if tpu:
-        MULTIPLIER = 20
-        steps_per_epoch = (count_data_items(TRAINING_FILENAMES) /
-                           BATCH_SIZE//REPLICAS) * MULTIPLIER
-        validation_steps_per_epoch = (count_data_items(
-            VALIDATION_FILENAMES)/BATCH_SIZE//REPLICAS) * MULTIPLIER
-    else:
-        steps_per_epoch = steps_per_epoch = (count_data_items(TRAINING_FILENAMES) /
-                                             BATCH_SIZE//REPLICAS)
-        validation_steps_per_epoch = (count_data_items(
-            VALIDATION_FILENAMES)/BATCH_SIZE//REPLICAS)
+    training_dataset = get_training_dataset(TRAINING_FILENAMES, augment=True)
+    validation_dataset = get_validation_dataset(VALIDATION_FILENAMES)
 
-    print("Train steps per epoch", steps_per_epoch)
-    print("Validation steps per epoch", validation_steps_per_epoch)
+    steps_per_epoch = count_data_items(
+        TRAINING_FILENAMES) // BATCH_SIZE * REPLICAS
+    validation_steps_per_epoch = count_data_items(
+        VALIDATION_FILENAMES) // BATCH_SIZE * REPLICAS
+
+    print("Epochs", EPOCHS)
+    print("BATCH SIZE", BATCH_SIZE)
+    print("steps_per_epoch", steps_per_epoch)
+    print("validation_steps_per_epoch", validation_steps_per_epoch)
 
     # get the current timestamp. This timestamp is used to save the model data with a unique name
     now = datetime.now()
@@ -174,106 +169,59 @@ def main():
     # Creating the model in the strategy scope places the model on the TPU
     with strategy.scope():
 
-        print("Create a pretrained resnet model")
+        loss, metrics, optimizer = get_model_parameters()
 
-        # preprocessing needed for resnet
         i = tf.keras.layers.Input([DIM, DIM, 3], dtype=tf.uint8)
         x = tf.cast(i, tf.float32)
-        x = tf.keras.applications.resnet_v2.preprocess_input(x)
+        x = tf.keras.layers.experimental.preprocessing.Resizing(224, 224)(x)
+        x = tf.keras.applications.vgg16.preprocess_input(x)
         input_pretrained_model = tf.keras.Model(
             inputs=[i], outputs=[x], name="input_pretrained_model")
 
-        # create base model
-        pretrained_model = tf.keras.applications.ResNet101V2(
-            weights="imagenet",  # Load weights pre-trained on ImageNet
-            input_shape=(DIM, DIM, 3),
+        base_model = tf.keras.applications.VGG16(
+            input_shape=(224, 224, 3),
             include_top=False,
+            weights='imagenet'
         )
 
-        # freeze the model
-        # we can't use pretrained_model.trainable = False because of an issue between the keras and tf implementation
-        # https://github.com/tensorflow/tensorflow/issues/29535
-        for layer in pretrained_model.layers:
+        # freeze the first 15 layers of the base model. All other layers are trainable.
+        for layer in base_model.layers[0:15]:
             layer.trainable = False
 
-        # create the final model
-        model = tf.keras.Sequential([
-            input_pretrained_model,
-            pretrained_model,
-            tf.keras.layers.GlobalAveragePooling2D(),
-            tf.keras.layers.Dense(1024, activation="relu"),
-            tf.keras.layers.Dropout(0.3),
-            tf.keras.layers.Dense(512, activation="relu"),
-            tf.keras.layers.Dropout(0.3),
-            tf.keras.layers.Dense(128, activation="relu"),
-            tf.keras.layers.Dense(
-                NUM_CLASSES, activation='sigmoid', bias_initializer=output_bias)
-        ])
+        for idx, layer in enumerate(base_model.layers):
+            print("layer", idx + 1, ":", layer.name,
+                  "is trainable:", layer.trainable)
 
-        loss, metrics = get_model_metrics()
+        # Create a new sequentail model and add the pretrained model
+        model = tf.keras.models.Sequential()
 
-        if tpu:
-            model.compile(
-                loss=loss,
-                metrics=metrics,
-                optimizer='adam',
-                # Reduce python overhead, and maximize the performance of your TPU
-                # Anything between 2 and `steps_per_epoch` could help here.
-                steps_per_execution=steps_per_epoch / 10,
-            )
-        else:
-            model.compile(
-                loss=loss,
-                metrics=metrics,
-                optimizer='adam',
-            )
+        # Add the input for the pretrained model
+        model.add(input_pretrained_model)
 
-        print(" ")
-        print(model.summary())
-        print(" ")
-        print("Fit model Nr. 1")
-        print(" ")
-        history = model.fit(
-            training_dataset,
-            epochs=EPOCHS,
-            callbacks=callbacks,
-            steps_per_epoch=steps_per_epoch,
-            validation_data=validation_dataset,
-            validation_steps=validation_steps_per_epoch,
-            verbose=VERBOSE_LEVEL
-        )
+        # Add the pretrained model
+        model.add(base_model)
 
-        example_validation_dataset = get_validation_dataset(
-            VALIDATION_FILENAMES, BATCH_SIZE, tpu)
-        validation_images = count_data_items(VALIDATION_FILENAMES)
-        evaluate_model(model, example_validation_dataset, history,
-                       validation_images, SAVE_OUTPUT, timestamp)
+        # Add a flatten layer to prepare the output of the cnn layer for the next layers
+        model.add(tf.keras.layers.Flatten())
 
-    print(" ")
-    print("Compile model Nr. 2")
-    print(" ")
+        model.add(tf.keras.layers.Dense(128, activation='relu'))
+        model.add(tf.keras.layers.Dropout(0.3))
 
-    K.clear_session()
-    with strategy.scope():
-        print("conv5_block: ")
-        # We unfreeze the last conv block while leaving BatchNorm layers frozen
-        for layer in model.layers[1].layers:
-            if not isinstance(layer, layers.BatchNormalization) and "conv5_" in layer.name:
-                layer.trainable = True
-            if "conv5_" in layer.name:
-                print(layer.name, layer.trainable)
-        print(" ")
+        model.add(tf.keras.layers.Dense(64, activation='relu'))
+        model.add(tf.keras.layers.Dropout(0.3))
 
-        loss, metrics = get_model_metrics()
+        model.add(tf.keras.layers.Dense(32, activation='relu'))
+
+        model.add(tf.keras.layers.Dense(NUM_CLASSES, activation='sigmoid'))
 
         if tpu:
             model.compile(
                 loss=loss,
                 metrics=metrics,
-                optimizer='adam',
+                optimizer=optimizer,
                 # Reduce python overhead, and maximize the performance of your TPU
                 # Anything between 2 and `steps_per_epoch` could help here.
-                steps_per_execution=steps_per_epoch / 10,
+                steps_per_execution=steps_per_epoch / 2,
             )
         else:
             model.compile(
@@ -285,7 +233,7 @@ def main():
     print(" ")
     print(model.summary())
     print(" ")
-    print("Fit model Nr. 2")
+    print("Fit model")
     print(" ")
 
     history = model.fit(
@@ -298,9 +246,14 @@ def main():
         verbose=VERBOSE_LEVEL
     )
 
+    print(" ")
+    print("Start evaluation process")
+    print(" ")
+    example_validation_dataset = get_validation_dataset(
+        VALIDATION_FILENAMES, BATCH_SIZE, tpu)
+    validation_images = count_data_items(VALIDATION_FILENAMES)
     predictions, _, threshold = evaluate_model(model, example_validation_dataset, history,
                                                validation_images, SAVE_OUTPUT, timestamp)
-
     predictions_mapped = [0 if x < threshold else 1 for x in predictions]
 
     example_validation_dataset = example_validation_dataset.unbatch().batch(20)
@@ -309,6 +262,10 @@ def main():
         example_validation_batch)
     display_batch_of_images(
         (validation_image_batch, validation_label_batch), predictions_mapped)
+
+    print(" ")
+    print("Done")
+    print(" ")
 
 
 main()

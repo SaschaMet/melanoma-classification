@@ -5,7 +5,9 @@ import tensorflow as tf
 
 from data.data_augmentation import augmentation_pipeline
 
+SEED = 1
 AUTOTUNE = tf.data.AUTOTUNE
+BATCH_SIZE = int(os.environ["BATCH_SIZE"])
 
 
 def count_data_items(filenames):
@@ -70,37 +72,40 @@ def load_test_dataset(filenames):
     return dataset
 
 
-def get_training_dataset(training_filenames, batch_size, tpu, shuffle=True, augment=True):
-    buffer_size = 512
-    if tpu:
-        buffer_size = 2048  # increase buffer size if we have a tpu
-
-    dataset = load_dataset(training_filenames)
-    if tpu:
-        # if we have no tpu we do not have to cache the data
-        dataset = dataset.cache()
+def get_training_dataset(filenames, batch_size=BATCH_SIZE, augment=True):
+    dataset = load_dataset(filenames)
+    dataset = dataset.cache()
+    dataset = dataset.shuffle(1024, seed=SEED, reshuffle_each_iteration=True)
     if augment:
         dataset = dataset.map(augmentation_pipeline,
                               num_parallel_calls=AUTOTUNE)
     dataset = dataset.repeat()  # the training dataset must repeat for several epochs
-    dataset = dataset.shuffle(buffer_size)
     dataset = dataset.batch(batch_size)
     # prefetch next batch while training (autotune prefetch buffer size)
     dataset = dataset.prefetch(AUTOTUNE)
     return dataset
 
 
-def get_validation_dataset(validation_filenames, batch_size, tpu):
-    dataset = load_dataset(validation_filenames)
-    if tpu:
-        dataset = dataset.cache()
+def get_validation_dataset(filenames, batch_size=BATCH_SIZE):
+    dataset = load_dataset(filenames)
+    dataset = dataset.cache()
+    dataset = dataset.shuffle(1024, seed=SEED, reshuffle_each_iteration=False)
+    dataset = dataset.repeat()
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(AUTOTUNE)
     return dataset
 
 
-def get_test_dataset(test_filenames, batch_size):
-    dataset = load_test_dataset(test_filenames)
+def get_prediction_validation_dataset(filenames, batch_size=BATCH_SIZE):
+    dataset = load_dataset(filenames)
+    dataset = dataset.cache()
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(AUTOTUNE)
+    return dataset
+
+
+def get_test_dataset(filenames, batch_size=BATCH_SIZE):
+    dataset = load_test_dataset(filenames)
     dataset = dataset.cache()
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(AUTOTUNE)

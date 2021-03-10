@@ -4,12 +4,12 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoa
 
 def get_lr_callback(strategy, epochs):
     # Source: https://colab.research.google.com/github/GoogleCloudPlatform/training-data-analyst/blob/master/courses/fast-and-lean-data-science/07_Keras_Flowers_TPU_xception_fine_tuned_best.ipynb#scrollTo=M-ID7vP5mIKs
-    start_lr = 0.00001
-    min_lr = 0.000001
-    max_lr = 0.00005 * strategy.num_replicas_in_sync
-    rampup_epochs = 5
-    sustain_epochs = 0
-    exp_decay = .8
+    start_lr = 1e-5
+    min_lr = 1e-6
+    max_lr = 1e-4
+    rampup_epochs = 6
+    sustain_epochs = 1
+    exp_decay = 0.8
 
     def lrfn(epoch):
         def lr(epoch, start_lr, min_lr, max_lr, rampup_epochs, sustain_epochs, exp_decay):
@@ -31,7 +31,6 @@ def get_lr_callback(strategy, epochs):
     rng = [i for i in range(epochs)]
     y = [lrfn(x) for x in rng]
     print(plt.plot(rng, [lrfn(x) for x in rng]))
-    print(y[0], y[-1])
 
     return lr_callback
 

@@ -36,26 +36,12 @@ def pred_to_binary(pred, threshold):
         return 1
 
 
-def predict_on_dataset(model, dataset, number_of_images, test_batch_size=50):
-    steps = math.ceil(number_of_images / test_batch_size)
-    dataset = dataset.unbatch().batch(test_batch_size)
-
-    _, labels = tuple(zip(*dataset))
-
-    label_list = []
-    for i in range(steps):
-        for item in labels[i].numpy().flatten():
-            # read the target variable as the label
-            label_list.append(item)
-
-    print("start predicting ...")
-
-    dataset = dataset.map(lambda image, idnum: image)
-    predictions = model.predict(dataset, steps=steps, verbose=1)
-    predictions = predictions.flatten().tolist()
-    predictions = [round(num, 4) for num in predictions]
-
-    return predictions, label_list
+def predict_on_dataset(model, dataset, number_of_images):
+    dataset = dataset.unbatch().batch(number_of_images, drop_remainder=True)
+    images, labels = tuple(zip(*dataset))
+    labels = labels[0].numpy()
+    predictions = model.predict(images[0], verbose=1)
+    return predictions, labels
 
 
 def evaluate_model(model, dataset, history, number_of_images, save_output, timestamp):

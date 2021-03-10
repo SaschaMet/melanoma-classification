@@ -29,5 +29,3 @@ def plot_history(history, timestamp, save_output):
 
     if save_output:
         plt.savefig("./" + timestamp + "-history.png")
-        with open("./" + timestamp + "-history.json", 'w') as f:
-            json.dump(history, f)
