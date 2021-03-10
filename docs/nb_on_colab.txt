@@ -26,3 +26,12 @@ with open(path_to_your_kaggle_json_file) as json_file:
 
 ## submit submisson.csv file
 #!kaggle competitions submit -c siim-isic-melanoma-classification -f submission.csv -m "Sub"
+
+
+## push to github
+gh_auth = "/content/drive/MyDrive/Colab Notebooks/_auth/gh_auth.txt"
+with open(gh_auth) as f:
+    gh_auth = f.read()
+
+!cd /content/melanoma-classification && git remote remove origin
+!cd /content/melanoma-classification && git remote add origin $gh_auth
