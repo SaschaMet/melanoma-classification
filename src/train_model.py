@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
+import matplotlib.pyplot as plt
 from datetime import datetime, date
 from tensorflow.keras import backend as K
 
@@ -161,7 +162,7 @@ def main():
 
     # get the model callbacks
     callbacks = get_model_callbacks(
-        strategy, EPOCHS, VERBOSE_LEVEL, SAVE_OUTPUT, timestamp, USE_TENSORBOARD)
+        steps_per_epoch, VERBOSE_LEVEL, SAVE_OUTPUT, timestamp, USE_TENSORBOARD)
 
     # Clear the session - this helps when we are creating multiple models
     K.clear_session()
@@ -249,11 +250,20 @@ def main():
     print(" ")
     print("Start evaluation process")
     print(" ")
+    validation_images = count_data_items(VALIDATION_FILENAMES)
     example_validation_dataset = get_prediction_validation_dataset(
         VALIDATION_FILENAMES, BATCH_SIZE)
     predictions, _, threshold = evaluate_model(model, example_validation_dataset, history,
                                                SAVE_OUTPUT, timestamp)
     predictions_mapped = [0 if x < threshold else 1 for x in predictions]
+
+    # plot the learning rate history
+    N = np.arange(0, len(callbacks[0].history["lr"]))
+    plt.figure()
+    plt.plot(N, callbacks[0].history["lr"])
+    plt.title("Cyclical Learning Rate (CLR)")
+    plt.xlabel("Training Iterations")
+    plt.ylabel("Learning Rate")
 
     example_validation_dataset = example_validation_dataset.unbatch().batch(20)
     example_validation_batch = iter(example_validation_dataset)
