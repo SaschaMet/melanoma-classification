@@ -1,5 +1,10 @@
+import gc
+import os
 import json
+import math
 import numpy as np
+from tqdm import tqdm
+from tensorflow.keras import backend as K
 from sklearn.metrics import precision_recall_curve, confusion_matrix
 
 from plots.plot_auc import plot_auc
@@ -33,6 +38,40 @@ def pred_to_binary(pred, threshold):
         return 0
     else:
         return 1
+
+
+def predict_on_test_dataset(model, dataset, items_to_predict):
+    batch_size = int(os.environ["BATCH_SIZE"])
+    total = math.ceil(items_to_predict / batch_size)
+
+    pbar = tqdm(total=total)
+
+    labels = []
+    predictions = []
+
+    count = 0
+    tensor = iter(dataset)
+
+    while count < total:
+        try:
+            image, label = tensor.get_next()
+            labels.append(label)
+            predictions = model.predict(image, steps=10)
+            predictions.append(predictions)
+            pbar.update(1)
+            count = count + 1
+            K.clear_session()
+            _ = gc.collect()  # do some garbage collection to prevent memory leaks
+        except:
+            pass
+
+    pbar.close()
+
+    labels = [item.numpy().decode("utf-8")
+              for sublist in labels for item in sublist]
+    predictions = [item[0] for sublist in predictions for item in sublist]
+
+    return predictions, labels
 
 
 def predict_on_dataset(model, dataset):

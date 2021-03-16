@@ -1,52 +1,27 @@
-import matplotlib.pyplot as plt
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard, LearningRateScheduler
+from model.clr_callback import CyclicLR
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 
 
-def get_lr_callback(strategy, epochs):
-    # Source: https://colab.research.google.com/github/GoogleCloudPlatform/training-data-analyst/blob/master/courses/fast-and-lean-data-science/07_Keras_Flowers_TPU_xception_fine_tuned_best.ipynb#scrollTo=M-ID7vP5mIKs
-    start_lr = 1e-5
-    min_lr = 1e-6
-    max_lr = 1e-4
-    rampup_epochs = 6
-    sustain_epochs = 1
-    exp_decay = 0.8
-
-    def lrfn(epoch):
-        def lr(epoch, start_lr, min_lr, max_lr, rampup_epochs, sustain_epochs, exp_decay):
-            if epoch < rampup_epochs:
-                lr = (max_lr - start_lr)/rampup_epochs * epoch + start_lr
-            elif epoch < rampup_epochs + sustain_epochs:
-                lr = max_lr
-            else:
-                lr = (max_lr - min_lr) * exp_decay**(epoch -
-                                                     rampup_epochs-sustain_epochs) + min_lr
-            return lr
-
-        return lr(epoch, start_lr, min_lr, max_lr, rampup_epochs, sustain_epochs, exp_decay)
-
-    lr_callback = LearningRateScheduler(
-        lambda epoch: lrfn(epoch), verbose=True)
-
-    print("learning rate decay")
-    rng = [i for i in range(epochs)]
-    y = [lrfn(x) for x in rng]
-    print(plt.plot(rng, [lrfn(x) for x in rng]))
-
-    return lr_callback
-
-
-def get_model_callbacks(strategy, epochs, verbose_level, save_output, timestamp, use_tensorboard=False):
+def get_model_callbacks(steps_per_epoch, base_lr, max_lr, verbose_level, save_output, timestamp, use_tensorboard=False):
     # model callbacks
     callback_list = []
 
-    lr_callback = get_lr_callback(strategy, epochs)
-    callback_list.append(lr_callback)
+    # initialize the cyclical learning rate callback
+    clr = CyclicLR(
+        mode="triangular",
+        base_lr=base_lr,
+        max_lr=max_lr,
+        step_size=steps_per_epoch/8
+    )
+
+    print("use cyclical learning rate callback")
+    callback_list.append(clr)
 
     # if the model does not improve for 10 epochs, stop the training
     stop_early = EarlyStopping(
         monitor='val_loss',
-        mode='max',
-        patience=10,
+        mode='min',
+        patience=5,
         restore_best_weights=True
     )
     callback_list.append(stop_early)
@@ -69,7 +44,7 @@ def get_model_callbacks(strategy, epochs, verbose_level, save_output, timestamp,
             save_best_only=True,
             monitor='val_loss',
             overwrite=True,
-            mode='max',
+            mode='min',
         )
         # append the checkpoint callback to the callback list
         callback_list.append(checkpoint)
