@@ -75,7 +75,8 @@ def load_test_dataset(filenames):
 def get_training_dataset(filenames, batch_size=BATCH_SIZE, augment=True):
     dataset = load_dataset(filenames)
     dataset = dataset.cache()
-    dataset = dataset.shuffle(1024, seed=SEED, reshuffle_each_iteration=True)
+    dataset = dataset.shuffle(BATCH_SIZE * 3, seed=SEED,
+                              reshuffle_each_iteration=True)
     if augment:
         dataset = dataset.map(augmentation_pipeline,
                               num_parallel_calls=AUTOTUNE)
@@ -89,7 +90,8 @@ def get_training_dataset(filenames, batch_size=BATCH_SIZE, augment=True):
 def get_validation_dataset(filenames, batch_size=BATCH_SIZE):
     dataset = load_dataset(filenames)
     dataset = dataset.cache()
-    dataset = dataset.shuffle(1024, seed=SEED, reshuffle_each_iteration=False)
+    dataset = dataset.shuffle(BATCH_SIZE * 3, seed=SEED,
+                              reshuffle_each_iteration=False)
     dataset = dataset.repeat()
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(AUTOTUNE)

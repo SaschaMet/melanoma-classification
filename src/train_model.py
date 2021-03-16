@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
+import tensorflow_addons as tfa
 from datetime import datetime, date
 from tensorflow.keras import backend as K
 
@@ -12,6 +13,8 @@ from data.load_tf_records import count_data_items, get_training_dataset, get_val
 from data.verify_tf_records import display_batch_of_images
 from model.model_callbacks import get_model_callbacks
 from model.evaluation import evaluate_model
+from model.create_model import create_model
+from model.clr_callback import plot_clr
 
 sys.path.append(str(Path('.').absolute().parent))
 
@@ -79,8 +82,12 @@ else:
     print("REPLICAS:", REPLICAS)
 
 
-def get_model_parameters():
-    optimizer = 'adam'
+def get_model_parameters(steps_per_epoch, BASE_LR, epochs):
+    optimizer = tfa.optimizers.RectifiedAdam(
+        total_steps=int(steps_per_epoch * epochs),
+        warmup_proportion=0.15,
+        min_lr=BASE_LR,
+    )
     loss = 'binary_crossentropy'
     metrics = [
         tf.keras.metrics.BinaryAccuracy(name='accuracy'),
@@ -98,8 +105,11 @@ def main():
     SAVE_OUTPUT = True
     USE_TENSORBOARD = True
 
+    BASE_LR = 1e-6
+    MAX_LR = 1e-3
+
     if tpu:
-        BATCH_SIZE = 128  # increase the batch size if we have a tpu
+        BATCH_SIZE = 1024  # increase the batch size if we have a tpu
         # disable saving the outputs and tb because we do not have access to localhost on a tpu
         SAVE_OUTPUT = False
         USE_TENSORBOARD = False
@@ -161,7 +171,7 @@ def main():
 
     # get the model callbacks
     callbacks = get_model_callbacks(
-        strategy, EPOCHS, VERBOSE_LEVEL, SAVE_OUTPUT, timestamp, USE_TENSORBOARD)
+        steps_per_epoch, BASE_LR, MAX_LR, VERBOSE_LEVEL, SAVE_OUTPUT, timestamp, USE_TENSORBOARD)
 
     # Clear the session - this helps when we are creating multiple models
     K.clear_session()
@@ -169,50 +179,10 @@ def main():
     # Creating the model in the strategy scope places the model on the TPU
     with strategy.scope():
 
-        loss, metrics, optimizer = get_model_parameters()
+        loss, metrics, optimizer = get_model_parameters(
+            steps_per_epoch, BASE_LR, EPOCHS)
 
-        i = tf.keras.layers.Input([DIM, DIM, 3], dtype=tf.uint8)
-        x = tf.cast(i, tf.float32)
-        x = tf.keras.layers.experimental.preprocessing.Resizing(224, 224)(x)
-        x = tf.keras.applications.vgg16.preprocess_input(x)
-        input_pretrained_model = tf.keras.Model(
-            inputs=[i], outputs=[x], name="input_pretrained_model")
-
-        base_model = tf.keras.applications.VGG16(
-            input_shape=(224, 224, 3),
-            include_top=False,
-            weights='imagenet'
-        )
-
-        # freeze the first 15 layers of the base model. All other layers are trainable.
-        for layer in base_model.layers[0:15]:
-            layer.trainable = False
-
-        for idx, layer in enumerate(base_model.layers):
-            print("layer", idx + 1, ":", layer.name,
-                  "is trainable:", layer.trainable)
-
-        # Create a new sequentail model and add the pretrained model
-        model = tf.keras.models.Sequential()
-
-        # Add the input for the pretrained model
-        model.add(input_pretrained_model)
-
-        # Add the pretrained model
-        model.add(base_model)
-
-        # Add a flatten layer to prepare the output of the cnn layer for the next layers
-        model.add(tf.keras.layers.Flatten())
-
-        model.add(tf.keras.layers.Dense(128, activation='relu'))
-        model.add(tf.keras.layers.Dropout(0.3))
-
-        model.add(tf.keras.layers.Dense(64, activation='relu'))
-        model.add(tf.keras.layers.Dropout(0.3))
-
-        model.add(tf.keras.layers.Dense(32, activation='relu'))
-
-        model.add(tf.keras.layers.Dense(NUM_CLASSES, activation='sigmoid'))
+        model = create_model(NUM_CLASSES, DIM)
 
         if tpu:
             model.compile(
@@ -221,13 +191,13 @@ def main():
                 optimizer=optimizer,
                 # Reduce python overhead, and maximize the performance of your TPU
                 # Anything between 2 and `steps_per_epoch` could help here.
-                steps_per_execution=steps_per_epoch / 2,
+                steps_per_execution=steps_per_epoch / 4,
             )
         else:
             model.compile(
                 loss=loss,
                 metrics=metrics,
-                optimizer='adam',
+                optimizer=optimizer,
             )
 
     print(" ")
@@ -254,6 +224,8 @@ def main():
     predictions, _, threshold = evaluate_model(model, example_validation_dataset, history,
                                                SAVE_OUTPUT, timestamp)
     predictions_mapped = [0 if x < threshold else 1 for x in predictions]
+
+    plot_clr(callbacks[0])
 
     example_validation_dataset = example_validation_dataset.unbatch().batch(20)
     example_validation_batch = iter(example_validation_dataset)

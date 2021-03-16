@@ -1,57 +1,47 @@
 import tensorflow as tf
-from tensorflow.keras import layers
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.applications import ResNet101V2
 
 
-def get_pretrained_model(img_shape):
-    pretrained_model = ResNet101V2(
+def create_model(NUM_CLASSES, DIM):
+    i = tf.keras.layers.Input([DIM, DIM, 3], dtype=tf.uint8)
+    x = tf.cast(i, tf.float32)
+    x = tf.keras.layers.experimental.preprocessing.Resizing(224, 224)(x)
+    x = tf.keras.applications.vgg16.preprocess_input(x)
+    input_pretrained_model = tf.keras.Model(
+        inputs=[i], outputs=[x], name="input_pretrained_model")
+
+    base_model = tf.keras.applications.VGG16(
+        input_shape=(224, 224, 3),
         include_top=False,
-        weights="imagenet",
-        input_tensor=Sequential([])(layers.Input(shape=img_shape)),
+        weights='imagenet'
     )
 
-    # We unfreeze some blocks while leaving BatchNorm layers frozen
-    for idx, layer in enumerate(pretrained_model.layers):
+    # freeze the first 15 layers of the base model. All other layers are trainable.
+    for layer in base_model.layers[0:15]:
         layer.trainable = False
-        if not isinstance(layer, layers.BatchNormalization):
-            if "conv5" in layer.name:
-                layer.trainable = True
-        # print("layer", idx + 1, ":", layer.name,
-        #       "is trainable:", layer.trainable)
 
-    return pretrained_model
+    # for idx, layer in enumerate(base_model.layers):
+        #print("layer", idx + 1, ":", layer.name, "is trainable:", layer.trainable)
 
+    # Create a new sequentail model and add the pretrained model
+    model = tf.keras.models.Sequential()
 
-def create_model(img_shape, num_classes, output_bias=None):
-    print("create model")
+    # Add the input for the pretrained model
+    model.add(input_pretrained_model)
 
-    if output_bias is not None:
-        output_bias = tf.keras.initializers.Constant(output_bias)
+    # Add the pretrained model
+    model.add(base_model)
 
-    model = Sequential()
+    # Add a flatten layer to prepare the output of the cnn layer for the next layers
+    model.add(tf.keras.layers.Flatten())
 
-    # add the pretrained model
-    pretrained_model = get_pretrained_model(img_shape)
-    model.add(pretrained_model)
+    model.add(tf.keras.layers.Dense(128, activation='relu'))
+    model.add(tf.keras.layers.Dropout(0.3))
 
-    model.add(layers.GlobalAveragePooling2D())
+    model.add(tf.keras.layers.Dense(64, activation='relu'))
+    model.add(tf.keras.layers.Dropout(0.3))
 
-    model.add(layers.Dense(1024, activation='relu'))
-    model.add(layers.Dropout(0.3))
+    model.add(tf.keras.layers.Dense(32, activation='relu'))
 
-    model.add(layers.Dense(512, activation='relu'))
-    model.add(layers.Dropout(0.3))
-
-    model.add(layers.Dense(256, activation='relu'))
-    model.add(layers.Dropout(0.3))
-
-    model.add(layers.Dense(128, activation='relu'))
-    model.add(layers.Dropout(0.3))
-
-    model.add(layers.Dense(num_classes, activation='softmax',
-                           bias_initializer=output_bias))
-
-    model.summary()
+    model.add(tf.keras.layers.Dense(NUM_CLASSES, activation='sigmoid'))
 
     return model
