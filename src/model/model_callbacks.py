@@ -2,20 +2,20 @@ from model.clr_callback import CyclicLR
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 
 
-def get_model_callbacks(steps_per_epoch, base_lr, max_lr, verbose_level, save_output, timestamp, use_tensorboard=False):
+def get_model_callbacks(steps_per_epoch, base_lr, max_lr, verbose_level, save_output, timestamp, use_tensorboard=False, use_clr=False):
     # model callbacks
     callback_list = []
 
-    # initialize the cyclical learning rate callback
-    clr = CyclicLR(
-        mode="triangular",
-        base_lr=base_lr,
-        max_lr=max_lr,
-        step_size=steps_per_epoch/8
-    )
-
-    print("use cyclical learning rate callback")
-    callback_list.append(clr)
+    if use_clr:
+        print("use cyclical learning rate callback")
+        # initialize the cyclical learning rate callback
+        clr = CyclicLR(
+            mode="triangular",
+            base_lr=base_lr,
+            max_lr=max_lr,
+            step_size=steps_per_epoch/8
+        )
+        callback_list.append(clr)
 
     # if the model does not improve for 10 epochs, stop the training
     stop_early = EarlyStopping(

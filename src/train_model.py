@@ -86,7 +86,7 @@ def get_model_parameters(steps_per_epoch, BASE_LR, epochs):
     optimizer = tfa.optimizers.RectifiedAdam(
         total_steps=int(steps_per_epoch * epochs),
         warmup_proportion=0.15,
-        min_lr=1e-6,
+        min_lr=BASE_LR,
     )
     loss = 'binary_crossentropy'
     metrics = [
@@ -109,7 +109,7 @@ def main():
     MAX_LR = 1e-3
 
     if tpu:
-        BATCH_SIZE = 128  # increase the batch size if we have a tpu
+        BATCH_SIZE = 1024  # increase the batch size if we have a tpu
         # disable saving the outputs and tb because we do not have access to localhost on a tpu
         SAVE_OUTPUT = False
         USE_TENSORBOARD = False
