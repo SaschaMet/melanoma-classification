@@ -99,6 +99,8 @@ def get_model_parameters(steps_per_epoch, BASE_LR, epochs):
 
 def main():
     DIM = 768
+    DIM_RESIZE = 512
+
     EPOCHS = 50
     BATCH_SIZE = 16
     NUM_CLASSES = 1
@@ -117,6 +119,7 @@ def main():
     # Set needed env variables based on the global variables
     os.environ["DIM"] = str(DIM)
     os.environ["BATCH_SIZE"] = str(BATCH_SIZE)
+    os.environ["DIM_RESIZE"] = str(DIM_RESIZE)
 
     # Get the data
     MALIGNANT_IMAGES = tf.io.gfile.glob(os.environ["PATH_TO_MALIGNANT_FILES"])
@@ -171,7 +174,7 @@ def main():
 
     # get the model callbacks
     callbacks = get_model_callbacks(
-        steps_per_epoch, BASE_LR, MAX_LR, VERBOSE_LEVEL, SAVE_OUTPUT, timestamp, USE_TENSORBOARD)
+        VERBOSE_LEVEL, SAVE_OUTPUT, timestamp, USE_TENSORBOARD)
 
     # Clear the session - this helps when we are creating multiple models
     K.clear_session()
@@ -224,8 +227,6 @@ def main():
     predictions, _, threshold = evaluate_model(model, example_validation_dataset, history,
                                                SAVE_OUTPUT, timestamp)
     predictions_mapped = [0 if x < threshold else 1 for x in predictions]
-
-    plot_clr(callbacks[0])
 
     example_validation_dataset = example_validation_dataset.unbatch().batch(20)
     example_validation_batch = iter(example_validation_dataset)

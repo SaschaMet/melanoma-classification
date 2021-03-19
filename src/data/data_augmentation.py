@@ -4,7 +4,7 @@ import random
 import tensorflow as tf
 
 SEED = 1
-DIM = int(os.environ["DIM"])
+DIM_RESIZE = int(os.environ["DIM_RESIZE"])
 
 
 def flip(x):
@@ -20,21 +20,6 @@ def flip(x):
     return x
 
 
-def color(x):
-    """Color augmentation
-    Args:
-        x: Image
-
-    Returns:
-        Augmented image
-    """
-    x = tf.image.random_hue(x, 0.08, seed=SEED)
-    x = tf.image.random_saturation(x, 0.6, 1.6, seed=SEED)
-    x = tf.image.random_brightness(x, 0.05, seed=SEED)
-    x = tf.image.random_contrast(x, 0.7, 1.3, seed=SEED)
-    return x
-
-
 def rotate(x):
     """Rotation augmentation
     Args:
@@ -47,17 +32,16 @@ def rotate(x):
 
 
 def zoom(x):
-    crop_size = random.randrange(int(DIM*0.75), DIM)
+    crop_size = random.randrange(int(DIM_RESIZE*0.8), DIM_RESIZE)
     x = tf.image.random_crop(x, size=[crop_size, crop_size, 3])
-    x = tf.image.resize(x, (DIM, DIM))
-    x = tf.cast(x, tf.uint8)
+    x = tf.image.resize(x, [DIM_RESIZE, DIM_RESIZE])
     return x
 
 
 def augmentation_pipeline(image, label):
-    augmentations = [flip, color, rotate, zoom]
+    augmentations = [flip, rotate, zoom]
     for f in augmentations:
-        if random.randint(1, 10) >= 5:
+        if random.randint(0, 10) >= 5:
             image = f(image)
 
     return image, label

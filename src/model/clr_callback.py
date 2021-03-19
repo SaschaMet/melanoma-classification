@@ -62,6 +62,15 @@ class CyclicLR(Callback):
             Defines whether scale_fn is evaluated on
             cycle number or cycle iterations (training
             iterations since start of cycle). Default is 'cycle'.
+
+
+        Example:
+            clr = CyclicLR(
+                mode="triangular",
+                base_lr=base_lr,
+                max_lr=max_lr,
+                step_size=steps_per_epoch/8
+            )
     """
 
     def __init__(self, base_lr=0.001, max_lr=0.006, step_size=2000., mode='triangular',
