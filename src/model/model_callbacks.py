@@ -1,4 +1,3 @@
-from model.clr_callback import CyclicLR
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 
 
@@ -10,7 +9,7 @@ def get_model_callbacks(verbose_level, save_output, timestamp, use_tensorboard=F
     stop_early = EarlyStopping(
         monitor='val_loss',
         mode='min',
-        patience=10,
+        patience=20,
         restore_best_weights=True
     )
     callback_list.append(stop_early)

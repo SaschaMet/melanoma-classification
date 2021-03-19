@@ -14,7 +14,6 @@ from data.verify_tf_records import display_batch_of_images
 from model.model_callbacks import get_model_callbacks
 from model.evaluation import evaluate_model
 from model.create_model import create_model
-from model.clr_callback import plot_clr
 
 sys.path.append(str(Path('.').absolute().parent))
 

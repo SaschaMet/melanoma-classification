@@ -4,7 +4,6 @@ from tensorflow.keras.callbacks import LambdaCallback
 from tensorflow.keras import backend as K
 import matplotlib.pyplot as plt
 import numpy as np
-import tempfile
 
 
 class LearningRateFinder:
@@ -24,7 +23,7 @@ class LearningRateFinder:
         self.avgLoss = 0
         self.bestLoss = 1e9
         self.batchNum = 0
-        self.weightsFile = None
+        self.weightsFile = "lr.hdf5"
 
     def reset(self):
         # re-initialize all variables from our constructor
@@ -34,7 +33,7 @@ class LearningRateFinder:
         self.avgLoss = 0
         self.bestLoss = 1e9
         self.batchNum = 0
-        self.weightsFile = None
+        self.weightsFile = "lr.hdf5"
 
     def is_data_iter(self, data):
         # define the set of class types we will check for
@@ -106,7 +105,6 @@ class LearningRateFinder:
         # create a temporary file path for the model weights and
         # then save the weights (so we can reset the weights when we
         # are done)
-        self.weightsFile = tempfile.mkstemp()[1]
         self.model.save_weights(self.weightsFile)
         # grab the *original* learning rate (so we can reset it
         # later), and then set the *starting* learning rate
