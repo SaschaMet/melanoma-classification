@@ -31,7 +31,7 @@ def display_one_image(image, title, subplot, red=False, titlesize=16):
     return (subplot[0], subplot[1], subplot[2]+1)
 
 
-def display_batch_of_images(databatch, predictions=None):
+def display_batch_of_images(databatch, predictions=None, unbatched=False):
     """This will work with:
     display_batch_of_images(images)
     display_batch_of_images(images, predictions)
@@ -39,7 +39,8 @@ def display_batch_of_images(databatch, predictions=None):
     display_batch_of_images((images, labels), predictions)
     """
     # data
-    images, labels = batch_to_numpy_images_and_labels(databatch)
+    images, labels = batch_to_numpy_images_and_labels(
+        databatch) if not unbatched else databatch
     if labels is None:
         labels = [None for _ in enumerate(images)]
 
