@@ -1,5 +1,3 @@
-# Source: https://www.pyimagesearch.com/2019/08/05/keras-learning-rate-finder/
-
 from tensorflow.keras.callbacks import LambdaCallback
 from tensorflow.keras import backend as K
 import matplotlib.pyplot as plt
@@ -7,6 +5,23 @@ import numpy as np
 
 
 class LearningRateFinder:
+    """ Calls the fit method on a model and returns the losses over n epochs
+        Source: https://www.pyimagesearch.com/2019/08/05/keras-learning-rate-finder/
+
+        Example:
+            lrf = LearningRateFinder(model)
+            lrf.find(
+                training_dataset,
+                startLR=1e-10,
+                endLR=1e-1,
+                epochs=30,
+                stepsPerEpoch=steps_per_epoch,
+                batchSize=64,
+                verbose=1
+            )
+            lrf.plot_loss()
+    """
+
     def __init__(self, model, stopFactor=4, beta=0.98):
         # store the model, stop factor, and beta value (for computing
         # a smoothed, average loss)
