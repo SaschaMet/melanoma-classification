@@ -2,6 +2,13 @@ import matplotlib.pyplot as plt
 
 
 def plot_metrics(history, timestamp, save_output):
+    """Plots model metrics
+
+    Args:
+        history (dict): Model history
+        timestamp (datetime): Used for name of output file
+        save_output (boolean): If true model metrics are saved as a png file
+    """
     metrics = ['loss', 'accuracy', 'auc']
     plt.figure(figsize=(10, 8))
     for n, metric in enumerate(metrics):

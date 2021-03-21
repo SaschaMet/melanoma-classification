@@ -128,7 +128,15 @@ def cyclic_learning_rate(global_step,
     return cyclic_lr
 
 
-def get_lr_callback(mode, learning_rate, max_lr, step_size):
+def get_lr_callback(mode, min_lr, max_lr, step_size):
+    """Returns a cyclical learning rate callback
+
+    Args:
+        mode (string): One of triangular, triangular2, exp_range
+        min_lr (int): Minimum learning rate
+        max_lr (int): Maximum learning rate
+        step_size (int): Number of iterations in half a cycle.
+    """
     def lrfn(epoch):
         return float(
             cyclic_learning_rate(
@@ -144,6 +152,15 @@ def get_lr_callback(mode, learning_rate, max_lr, step_size):
 
 
 def plot_clr(mode, learning_rate, max_lr, step_size, epochs):
+    """Plot the cyclical learning rate
+
+    Args:
+        mode (string): One of triangular, triangular2, exp_range
+        min_lr (int): Minimum learning rate
+        max_lr (int): Maximum learning rate
+        step_size (int): Number of iterations in half a cycle.
+        epochs (int): Number of epochs to train
+    """
     rates = []
     for i in range(0, epochs):
         x = cyclic_learning_rate(
