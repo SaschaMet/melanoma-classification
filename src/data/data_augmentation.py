@@ -1,4 +1,3 @@
-# TF Augmentation functions. Source: https://www.wouterbulten.nl/blog/tech/data-augmentation-using-tensorflow-data-dataset/
 import os
 import math
 import random
@@ -9,21 +8,12 @@ SEED = 1
 DIM_RESIZE = int(os.environ["DIM_RESIZE"])
 
 AUGMENTATION_CONFIG = dict(
-    # DATA AUGMENTATION
     rot=180.0,
     shr=1.5,
     hzoom=6.0,
     wzoom=6.0,
     hshift=6.0,
-    wshift=6.0,
-
-    # COARSE DROPOUT
-    # Determines proportion of train images to apply coarse dropout to / Between 0 and 1.
-    DROP_FREQ=0,
-    # How many squares to remove from train images when applying dropout.
-    DROP_CT=0,
-    # The size of square side equals IMG_SIZE * DROP_SIZE / Between 0 and 1.
-    DROP_SIZE=0,
+    wshift=6.0
 )
 
 
@@ -66,7 +56,9 @@ def rotate(x):
 
 
 def get_mat(rotation, shear, height_zoom, width_zoom, height_shift, width_shift):
-    # returns 3x3 transformmatrix which transforms indicies
+    """returns 3x3 transform matrix which transforms indicies
+        Source: https://github.com/Masdevallia/3rd-place-kaggle-siim-isic-melanoma-classification/blob/master/kaggle_notebooks/melanoma-classification-model-training.ipynb
+    """
 
     # CONVERT DEGREES TO RADIANS
     rotation = math.pi * rotation / 180.
@@ -105,8 +97,15 @@ def get_mat(rotation, shear, height_zoom, width_zoom, height_shift, width_shift)
 
 
 def transform(image, cfg=AUGMENTATION_CONFIG):
-    # input image - is one image of size [dim,dim,3] not a batch of [b,dim,dim,3]
-    # output - image randomly rotated, sheared, zoomed, and shifted
+    """ Returns a randomly rotated, sheared, zoomed, and shifted image
+
+    Args:
+        image: one image of size [dim,dim,3] not a batch of [b,dim,dim,3]
+        cfg (dict, optional): Augmentation config. Defaults to AUGMENTATION_CONFIG.
+
+    Returns:
+        image: image randomly rotated, sheared, zoomed, and shifted
+    """
     DIM = DIM_RESIZE
     XDIM = DIM % 2  # fix for size 331
 
@@ -139,6 +138,15 @@ def transform(image, cfg=AUGMENTATION_CONFIG):
 
 
 def augment_image(image, augment=True):
+    """Randomly applies a image transformation to an input image
+
+    Args:
+        image (image)
+        augment (bool, optional): Apply augmentation or not. Defaults to True.
+
+    Returns:
+        image
+    """
     augmentations = [transform, color, rotate, flip]
     if augment:
         # Data augmentation

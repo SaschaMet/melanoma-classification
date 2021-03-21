@@ -3,6 +3,14 @@ import matplotlib.pyplot as plt
 
 
 def batch_to_numpy_images_and_labels(data):
+    """Returns a list of images and labels from a tf ds batch
+
+    Args:
+        data (array): Batch of images and labels
+
+    Returns:
+        tuple: List of images and labels
+    """
     images, labels = data
     numpy_images = images.numpy()
     numpy_labels = labels.numpy()
@@ -13,6 +21,15 @@ def batch_to_numpy_images_and_labels(data):
 
 
 def title_from_label_and_target(label, correct_label):
+    """Returns the title from the label or target variable
+
+    Args:
+        label (string): Predicted label of an image
+        correct_label (string): True label of an image
+
+    Returns:
+        string: Correct Title
+    """
     CLASSES = [0, 1]
     if correct_label is None:
         return CLASSES[label], True
@@ -22,6 +39,18 @@ def title_from_label_and_target(label, correct_label):
 
 
 def display_one_image(image, title, subplot, red=False, titlesize=16):
+    """Displays an image
+
+    Args:
+        image (array)
+        title (string)
+        subplot (plt subplot)
+        red (bool, optional): Defaults to False.
+        titlesize (int, optional): Defaults to 16.
+
+    Returns:
+        subplot: Subplot
+    """
     plt.subplot(*subplot)
     plt.axis('off')
     plt.imshow(image)
@@ -32,11 +61,17 @@ def display_one_image(image, title, subplot, red=False, titlesize=16):
 
 
 def display_batch_of_images(databatch, predictions=None, unbatched=False):
-    """This will work with:
-    display_batch_of_images(images)
-    display_batch_of_images(images, predictions)
-    display_batch_of_images((images, labels))
-    display_batch_of_images((images, labels), predictions)
+    """ Displays a batch of images
+        This will work with:
+        display_batch_of_images(images)
+        display_batch_of_images(images, predictions)
+        display_batch_of_images((images, labels))
+        display_batch_of_images((images, labels), predictions)
+
+        Args:
+            databatch (array): Batch of images and labels
+            predictions (bool, optional): Predicted labels
+            unbatched (bool, optional): Set this to false if the input is not a batch
     """
     # data
     images, labels = batch_to_numpy_images_and_labels(

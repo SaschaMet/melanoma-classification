@@ -19,18 +19,43 @@ resizing_layer = tf.keras.layers.experimental.preprocessing.Resizing(
 
 
 def count_data_items(filenames):
+    """Counts the items in an TF Dataset
+
+    Args:
+        filenames (array)
+
+    Returns:
+        int: Items inside an TF Dataset
+    """
     n = [int(re.compile(r"-([0-9]*)\.").search(filename).group(1))
          for filename in filenames]
     return np.sum(n)
 
 
 def decode_image(image):
+    """Decodes a jpeg image
+
+    Args:
+        image (array)
+
+    Returns:
+        array: Decoded image
+    """
     image = tf.image.decode_jpeg(image, channels=3)
     image = tf.cast(image, tf.float32)
     return image
 
 
 def read_tfrecord(example, labeled):
+    """Reads in a tf record file
+
+    Args:
+        example (tf record)
+        labeled (boolean): Return the label?
+
+    Returns:
+        tuple: tfrecord and idnum
+    """
     tfrecord_format = {
         "image": tf.io.FixedLenFeature([], tf.string),
         "target": tf.io.FixedLenFeature([], tf.int64)
@@ -48,6 +73,16 @@ def read_tfrecord(example, labeled):
 
 
 def load_dataset(filenames, labeled=True, ordered=False):
+    """Loads a TF Dataset
+
+    Args:
+        filenames (array): Array of files to include in the ds
+        labeled (bool, optional): Return the label or just the filename?. Defaults to True.
+        ordered (bool, optional): Defaults to False.
+
+    Returns:
+        TF Dataset
+    """
     ignore_order = tf.data.Options()
     if not ordered:
         ignore_order.experimental_deterministic = False  # disable order, increase speed
@@ -70,6 +105,17 @@ def load_dataset(filenames, labeled=True, ordered=False):
 
 
 def get_training_dataset(filenames, number_of_images, batch_size=BATCH_SIZE, augment=True):
+    """Gets a training dataset
+
+    Args:
+        filenames (array): Array of files to include in the ds
+        number_of_images (int): Number of images in the ds
+        batch_size (int, optional): Defaults to BATCH_SIZE.
+        augment (bool, optional): Defaults to True.
+
+    Returns:
+        TF Dataset
+    """
     dataset = load_dataset(filenames, labeled=True)
     if augment:
         dataset = dataset.map(lambda x, y: (augment_image(
@@ -83,6 +129,18 @@ def get_training_dataset(filenames, number_of_images, batch_size=BATCH_SIZE, aug
 
 
 def get_validation_dataset(filenames, batch_size=BATCH_SIZE, repeat=False, ordered=False):
+    """Gets a validation dataset
+
+    Args:
+        filenames (array): Array of files to include in the ds
+        number_of_images (int): Number of images in the ds
+        batch_size (int, optional): Defaults to BATCH_SIZE.
+        repeat (bool, optional): Defaults to False.
+        ordered (bool, optional): Defaults to False.
+
+    Returns:
+        TF Dataset
+    """
     dataset = load_dataset(filenames, labeled=True, ordered=ordered)
     if repeat:
         dataset = dataset.repeat()
@@ -92,6 +150,16 @@ def get_validation_dataset(filenames, batch_size=BATCH_SIZE, repeat=False, order
 
 
 def get_test_dataset(filenames, batch_size=BATCH_SIZE, ordered=True):
+    """Gets a test dataset
+
+    Args:
+        filenames ([type]): [description]
+        batch_size (int, optional): Defaults to BATCH_SIZE.
+        ordered (bool, optional): Defaults to False.
+
+    Returns:
+        TF Dataset
+    """
     dataset = load_dataset(filenames, labeled=False, ordered=ordered)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(AUTOTUNE)

@@ -2,7 +2,17 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoa
 
 
 def get_model_callbacks(verbose_level, save_output, timestamp, use_tensorboard=False):
-    # model callbacks
+    """Returns pre defined callacks for model training
+
+    Args:
+        verbose_level (int)
+        save_output (boolean)
+        timestamp (datetime)
+        use_tensorboard (bool, optional): Defaults to False.
+
+    Returns:
+        array: List of callbacks
+    """
     callback_list = []
 
     # if the model does not improve for 10 epochs, stop the training

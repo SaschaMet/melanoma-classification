@@ -108,7 +108,7 @@ def main():
     LR_START = 1e-5
 
     if tpu:
-        BATCH_SIZE = 1024  # increase the batch size if we have a tpu
+        BATCH_SIZE = 128  # increase the batch size if we have a tpu
         # disable saving the outputs and tb because we do not have access to localhost on a tpu
         SAVE_OUTPUT = False
 
@@ -160,26 +160,26 @@ def main():
     VALIDATION_IMAGES = count_data_items(VALIDATION_FILENAMES)
 
     print("TRAINING FILES", len(TRAINING_FILENAMES))
-    print("VALODATION FILES", len(VALIDATION_FILENAMES))
+    print("VALIDATION FILES", len(VALIDATION_FILENAMES))
     print(" ")
 
     print("TRAINING_IMAGES", TRAINING_IMAGES)
     print("VALIDATION_IMAGES", VALIDATION_IMAGES)
+    print(" ")
 
     training_dataset = get_training_dataset(
         TRAINING_FILENAMES, TRAINING_IMAGES, augment=True)
     validation_dataset = get_validation_dataset(
         VALIDATION_FILENAMES, repeat=True)
 
-    steps_per_epoch = count_data_items(
-        TRAINING_FILENAMES) // BATCH_SIZE * REPLICAS
-    validation_steps_per_epoch = count_data_items(
-        VALIDATION_FILENAMES) // BATCH_SIZE * REPLICAS
+    steps_per_epoch = 30
+    validation_steps_per_epoch = 5
 
     print("Epochs", EPOCHS)
     print("BATCH SIZE", BATCH_SIZE)
     print("steps_per_epoch", steps_per_epoch)
     print("validation_steps_per_epoch", validation_steps_per_epoch)
+    print(" ")
 
     # get the current timestamp. This timestamp is used to save the model data with a unique name
     now = datetime.now()
@@ -206,7 +206,7 @@ def main():
                 optimizer=optimizer,
                 # Reduce python overhead, and maximize the performance of your TPU
                 # Anything between 2 and `steps_per_epoch` could help here.
-                steps_per_execution=steps_per_epoch / 10,
+                steps_per_execution=int(steps_per_epoch / 10)
             )
         else:
             model.compile(
@@ -245,7 +245,7 @@ def main():
                 optimizer=optimizer,
                 # Reduce python overhead, and maximize the performance of your TPU
                 # Anything between 2 and `steps_per_epoch` could help here.
-                steps_per_execution=steps_per_epoch / 4,
+                steps_per_execution=int(steps_per_epoch / 10),
             )
         else:
             model.compile(
@@ -288,14 +288,6 @@ def main():
         VALIDATION_FILENAMES, BATCH_SIZE)
     predictions, _, threshold = evaluate_model(model, example_validation_dataset, history,
                                                SAVE_OUTPUT, timestamp)
-    predictions_mapped = [0 if x < threshold else 1 for x in predictions]
-
-    example_validation_dataset = example_validation_dataset.unbatch().batch(20)
-    example_validation_batch = iter(example_validation_dataset)
-    validation_image_batch, validation_label_batch = next(
-        example_validation_batch)
-    display_batch_of_images(
-        (validation_image_batch, validation_label_batch), predictions_mapped)
 
     print(" ")
     print("Done")

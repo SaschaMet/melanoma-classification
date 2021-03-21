@@ -2,7 +2,18 @@ import tensorflow as tf
 import efficientnet.keras as efn
 
 
-def create_model(num_classes, image_dimensions, initial_bias, fine_tune=False):
+def create_model(num_classes, image_dimensions, initial_bias=False, fine_tune=False):
+    """Creates a EfficientNetB5 model
+
+    Args:
+        num_classes (int): Number of classes to predict
+        image_dimensions (int): Image dimensions
+        initial_bias (bool, optional): Initial bias of the output layer
+        fine_tune (bool, optional): True sets the whole model to trainable. Defaults to False.
+
+    Returns:
+        EfficientNetB5 sequential model
+    """
     base_model = efn.EfficientNetB5(
         include_top=False,
         weights="imagenet",

@@ -41,6 +41,15 @@ def pred_to_binary(pred, threshold):
 
 
 def predict_on_dataset(model, dataset):
+    """Calls model.predict on the input dataset and returns predictions and labels
+
+    Args:
+        model
+        dataset
+
+    Returns:
+        tuple: predictions and labels
+    """
     print("start predicting ...")
     labels = []
     predictions = []
@@ -57,6 +66,18 @@ def predict_on_dataset(model, dataset):
 
 
 def evaluate_model(model, dataset, history, save_output, timestamp):
+    """Evaluates a model on a given dataset
+
+    Args:
+        model
+        dataset
+        history (dict): Model history
+        save_output (bool): Save the output to disk?
+        timestamp (bool): Used for output file names
+
+    Returns:
+        tuple: (predictions, labels, threshold)
+    """
 
     predictions, labels = predict_on_dataset(model, dataset)
 
