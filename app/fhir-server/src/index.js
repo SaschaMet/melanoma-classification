@@ -10,6 +10,7 @@ const server = new FHIRServer(SERVER_CONFIG)
 	.configureMiddleware()
 	// .configurePassport()
 	.configureHelmet()
+    .addPredictRoute()
 	.enableHealthCheck()
 	.setProfileRoutes()
 	.setErrorRoutes();
