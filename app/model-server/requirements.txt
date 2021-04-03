@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+efficientnet
+tensorflow
+keras
