@@ -40,7 +40,9 @@ def get_class_distribution_of_dataset(df):
     weight_for_0 = (1 / benign_cases)*(total_img)/2.0
     weight_for_1 = (1 / malignant_cases)*(total_img)/2.0
 
+    class_weight = {0: weight_for_0, 1: weight_for_1}
+
     print('Weight for class 0: {:.2f}'.format(weight_for_0))
     print('Weight for class 1: {:.2f}'.format(weight_for_1))
 
-    return malignant_cases, benign_cases
+    return malignant_cases, benign_cases, initial_bias, class_weight
