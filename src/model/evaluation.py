@@ -1,10 +1,11 @@
 import json
 import numpy as np
-from sklearn.metrics import precision_recall_curve, confusion_matrix
+from sklearn.metrics import precision_recall_curve, confusion_matrix, classification_report
 
 from plots.plot_auc import plot_auc
 from plots.plot_model_metrics import plot_metrics
 from plots.plot_confusion_matrix import plot_confusion_matrix
+from plots.plot_precision_recall import plot_precision_recall_curve
 
 
 def calc_f1(prec, recall):
@@ -100,5 +101,12 @@ def evaluate_model(model, dataset, history, save_output, timestamp):
 
     # plot auc
     plot_auc(labels, predictions, timestamp, save_output)
+
+    # plot precision recall curve
+    plot_precision_recall_curve(labels, predictions)
+
+    # print classification report
+    target_names = ['Benign', 'Malignant']
+    print(classification_report(labels, y_pred_binary, target_names=target_names))
 
     return predictions, labels, threshold
