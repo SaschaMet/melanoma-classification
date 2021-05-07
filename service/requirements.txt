@@ -1,0 +1,6 @@
+efficientnet
+tensorflow
+matplotlib
+aiofiles
+Pillow
+keras
