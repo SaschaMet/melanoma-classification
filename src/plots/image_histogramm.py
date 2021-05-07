@@ -35,8 +35,15 @@ def binarize_array(numpy_array, threshold):
 
 
 def get_pixel_distribution(image_path):
-    raw_image = plt.imread(image_path)
+    """Returns the pixel distribution of an image
 
+    Args:
+        image_path (string)
+
+    Returns:
+        List: Mean and Std
+    """
+    raw_image = plt.imread(image_path)
     mean = raw_image.mean()
     std = raw_image.std()
 
@@ -44,6 +51,14 @@ def get_pixel_distribution(image_path):
 
 
 def get_means_and_stds(df):
+    """Returns means and stds of images in a dataframe
+
+    Args:
+        df (pandas dataframe): Must have 'image_path' column
+
+    Returns:
+        Tuple: Tuple with lists of means and stds of images
+    """
     means = []
     stds = []
 
