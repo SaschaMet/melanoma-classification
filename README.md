@@ -7,7 +7,7 @@ This repository holds the source code for my master thesis
 
 To identify a melanoma, several neural networks were trained based on the Kaggle dataset from the "SIIM-ISIC Melanoma Classification" competition: <https://www.kaggle.com/c/siim-isic-melanoma-classification/overview>
 
-The final result is an ensemble from two EfficientNet B5 models. It achieved an ROC/AUC score of 0.9514. The winner of the Kaggle competition achieved a score of 0.9490.
+The final result is an ensemble from two EfficientNet B5 models. It achieved an ROC/AUC score of 0.9514.
 
 The training process as well as the jupyter notebooks for all models can be found here: <https://www.comet.ml/saschamet/master-thesis/view/oReT9Mkucm9UUH1LMinGOQmyl>
 
