@@ -6,16 +6,35 @@ import efficientnet.keras as efn
 
 
 def get_model_21():
+    """Helper function to load a model
+
+    Returns:
+        tf model: Tensorflow model
+    """
     model = tf.keras.models.load_model("./models/b5_Seed_21.h5")
     return model
 
 
 def get_model_42():
+    """Helper function to load a model
+
+    Returns:
+        tf model: Tensorflow model
+    """
     model = tf.keras.models.load_model("./models/b5_Seed_42.h5")
     return model
 
 
 def predict(image_url, number_of_models=1):
+    """Get model prediction
+
+    Args:
+        image_url (string): A URL to an image to get a prediction from
+        number_of_models (int, optional): Number of models to use for the prediction. Can be 1 or 2. Defaults to 1
+
+    Returns:
+        int: Prediction probability of beeing a malignant melanoma
+    """
     try:
         # 1. get the image form the url
         response = requests.get(image_url, stream=True).raw

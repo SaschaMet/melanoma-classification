@@ -82,6 +82,7 @@ def get_grad_cam(image_url):
     superimposed_img = tf.keras.preprocessing.image.array_to_img(
         superimposed_img)
 
+    # Create a plot and return it
     fig = plt.figure(figsize=(12, 8))
     ax1 = fig.add_subplot(1, 2, 1)
     ax1.imshow(superimposed_img)
