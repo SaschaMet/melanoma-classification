@@ -7,11 +7,11 @@ This repository holds the source code for my master thesis
 
 To identify a melanoma, several neural networks were trained based on the Kaggle dataset from the "SIIM-ISIC Melanoma Classification" competition: <https://www.kaggle.com/c/siim-isic-melanoma-classification/overview>
 
-The final result is an ensemble from two EfficientNet B5 models. It achieved an ROC/AUC score of 0.9514.
-
-The training process as well as the jupyter notebooks for all models can be found here: <https://www.comet.ml/saschamet/master-thesis/view/oReT9Mkucm9UUH1LMinGOQmyl>
+The training process as well as the jupyter notebooks for all models can be found here: <https://www.comet.ml/saschamet/master-thesis>
 
 A Kaggle notebook showing the training process of a single EfficientNet B5 model is available here: <https://www.kaggle.com/saschamet/melanoma-efficientnetb5-noisy-student>
+
+This Kaggle notebook can be used to easily reproduce the results from this work.
 
 ## Model as a Service
 
@@ -45,6 +45,8 @@ Method: POST
 Parameters:
 
 - image_url: URL of an image to predict
+
+Additional documentation on how to create your own service can be found in the `/docs` folder.
 
 ## Important Note
 
